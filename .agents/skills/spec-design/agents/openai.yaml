@@ -1,0 +1,7 @@
+interface:
+  display_name: "技术设计"
+  short_description: "校验需求闭环并生成含真实接入契约的技术设计"
+  default_prompt: "使用 $spec-design 校验 requirements.md 已闭环，基于本系统真实实现生成 design.md；Java 项目使用真实类、方法和注解。"
+
+policy:
+  allow_implicit_invocation: false

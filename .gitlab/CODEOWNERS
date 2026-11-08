@@ -1,0 +1,32 @@
+# 杭州烟草后端工程 Code Owner 配置
+# 以下为杭州烟草组织团队别名；正式接入 GitLab 时映射到平台真实团队账号。
+
+* @hangzhou-tobacco/architecture-owner
+
+# ==============================================================================
+# 🔴 高危治理与控制文件 (强所有权保护：禁止 AI 自我放行)
+# ==============================================================================
+/rules/                     @hangzhou-tobacco/architecture-owner
+/spec/                      @hangzhou-tobacco/architecture-owner
+/.githooks/                 @hangzhou-tobacco/quality-owner
+/.gitlab/                   @hangzhou-tobacco/quality-owner @hangzhou-tobacco/architecture-owner
+CLAUDE.md                   @hangzhou-tobacco/architecture-owner
+AGENTS.md                   @hangzhou-tobacco/architecture-owner
+tasks.md                    @hangzhou-tobacco/architecture-owner
+.gitlab-ci.yml              @hangzhou-tobacco/quality-owner @hangzhou-tobacco/architecture-owner
+
+# ==============================================================================
+# 🔴 高危生产配置与核心数据 DDL (架构师专审)
+# ==============================================================================
+*application-prod.yml       @hangzhou-tobacco/architecture-owner
+/sql/                       @hangzhou-tobacco/architecture-owner
+*.sql                       @hangzhou-tobacco/architecture-owner
+
+# ==============================================================================
+# 🟡 核心与常规业务代码模块
+# ==============================================================================
+/ticket-api/                @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
+/ticket-biz/                @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
+/ticket-dal/                @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
+/ticket-common/             @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
+/ticket-mcp-server/         @hangzhou-tobacco/security-owner @hangzhou-tobacco/architecture-owner

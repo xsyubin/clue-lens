@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "clue-mcp-server": {
+      "command": "node",
+      "args": [
+        "${PLUGIN_ROOT}/../../../scripts/mcp-server.mjs"
+      ],
+      "env": {
+        "CLUE_MCP_OPERATOR": "DEV_AGENT_01",
+        "CLUE_MCP_ROLE": "DEVELOPER"
+      }
+    }
+  }
+}

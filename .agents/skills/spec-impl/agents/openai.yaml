@@ -1,0 +1,7 @@
+interface:
+  display_name: "任务实现"
+  short_description: "先清理目标模块运行时 Mock，再按规格实现和验证代码"
+  default_prompt: "使用 $spec-impl 先检查并清理目标模块运行时 Mock，再按 design.md 和 tasks.md 实现功能并运行验证。"
+
+policy:
+  allow_implicit_invocation: false

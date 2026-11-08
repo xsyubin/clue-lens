@@ -1,0 +1,53 @@
+{
+  "name": "clue-lens",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs && npm run db:push",
+    "dev": "next dev",
+    "seed": "node scripts/seed-demo.mjs",
+    "test": "tsx --test src/tests/*.test.ts",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "review": "./scripts/deterministic-review.sh",
+    "check:consistency": "./scripts/check-consistency.sh",
+    "check:security": "./scripts/static-security-check.sh",
+    "mcp": "node scripts/mcp-server.mjs",
+    "test:mcp": "node scripts/test-mcp.mjs",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "better-auth": "^1.3.0",
+    "better-sqlite3": "^12.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.44.0",
+    "lucide-react": "^1.70.0",
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "drizzle-kit": "^0.31.0",
+    "tailwindcss": "^4.1.0",
+    "tw-animate-css": "^1.3.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,29 @@
+node_modules
+.next
+out
+.env
+.env.local
+data/*.db
+data/*.db-shm
+data/*.db-wal
+*.tsbuildinfo
+next-env.d.ts
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/nbactions.xml
+/nb-configuration.xml
+.nb-cache/
+
+
+### VS Code ###
+.vscode/
+
+### macOS ###
+.DS_Store
+
+### OMC ###
+.omc/

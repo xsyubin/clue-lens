@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Git pre-commit hook: 触发确定性前置审查
+set -e
+
+./scripts/deterministic-review.sh --staged

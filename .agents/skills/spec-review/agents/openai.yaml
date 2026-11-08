@@ -1,0 +1,7 @@
+interface:
+  display_name: "代码评审与交付门禁"
+  short_description: "按业务规格与双级Checklist审查变更，生成代码健康与安全审计卡"
+  default_prompt: "使用 $spec-review 对照业务规格与项目双级 Checklist (B-01~B-06) 审查当前代码变更，输出《代码健康与安全审计卡》并给出终审建议。"
+
+policy:
+  allow_implicit_invocation: false

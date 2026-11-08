@@ -1,0 +1,7 @@
+interface:
+  display_name: "正式需求细化"
+  short_description: "闭环用户可见口径后生成正式业务与技术需求"
+  default_prompt: "使用 $spec-requirements 基于澄清文档、原型和现有系统细化需求，先关闭用户可见阻塞项，再生成 requirements.md。"
+
+policy:
+  allow_implicit_invocation: false

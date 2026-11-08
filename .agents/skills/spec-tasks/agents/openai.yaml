@@ -1,0 +1,7 @@
+interface:
+  display_name: "任务规划"
+  short_description: "按业务复杂度生成轻量或标准实现任务清单"
+  default_prompt: "使用 $spec-tasks 根据已确认的 requirements.md 与 design.md 生成匹配的 tasks.md。"
+
+policy:
+  allow_implicit_invocation: false

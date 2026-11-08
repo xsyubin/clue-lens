@@ -1,0 +1,55 @@
+version: 1
+project: clue-lens
+purpose: "全栈 AI Coding 中的可复现 Sub-agent 角色与交付约定"
+
+# 这是角色契约，不是某个厂商 Agent 的私有配置。执行器可以是 Codex、Claude、Antigravity
+# 或其他支持并行任务的 Agent；每个角色都可在独立 worktree 中工作。
+roles:
+  - id: spec-analyst
+    objective: "把原始需求整理成 clarification/requirements/design/tasks 规格资产"
+    inputs:
+      - "spec/<feature>/raw-requirements.md"
+      - AGENTS.md
+      - rules/
+    outputs:
+      - "spec/<feature>/*.md"
+      - "evidence/agent-runs/<run-id>/spec-analyst.md"
+    allowed_paths: ["spec/", "evidence/", "README.md"]
+    forbidden_paths: ["src/", "data/", ".env"]
+    checks: ["markdown-links", "spec-consistency"]
+    commands: ["git diff --check", "./scripts/validate-agent-manifest.sh"]
+
+  - id: fullstack-implementer
+    objective: "按已确认设计实现全栈代码（Server Actions、Drizzle ORM、RSC 与 UI），并同步验证"
+    inputs:
+      - "spec/<feature>/requirements.md"
+      - "spec/<feature>/design.md"
+      - "spec/<feature>/tasks.md"
+    outputs:
+      - "src/"
+      - "evidence/agent-runs/<run-id>/fullstack-implementer.md"
+    allowed_paths: ["src/", "data/", "scripts/"]
+    forbidden_paths: [".env", ".git/"]
+    checks: ["typecheck", "static-security-check", "check-consistency"]
+    commands: ["./scripts/static-security-check.sh", "./scripts/check-consistency.sh"]
+
+  - id: quality-reviewer
+    objective: "独立验证机器门禁、安全红线、MCP 协议契约与 AI Review 证据"
+    inputs:
+      - "git diff"
+      - "spec/<feature>/requirements.md"
+      - AGENTS.md
+    outputs:
+      - "evidence/agent-runs/<run-id>/quality-reviewer.md"
+      - "evidence/deterministic-review-report.md"
+    allowed_paths: ["evidence/", "scripts/", "rules/"]
+    forbidden_paths: ["src/"]
+    checks: ["secret-scan", "check-mcp", "deterministic-review"]
+    commands: ["./scripts/secret-scan.sh", "./scripts/check-mcp.sh", "./scripts/deterministic-review.sh"]
+
+execution:
+  isolation: "每个角色使用 scripts/worktree-new.sh 创建独立 worktree"
+  parallel_safe: ["spec-analyst + quality-reviewer（只读代码时）"]
+  serial_required: ["spec-analyst -> fullstack-implementer -> quality-reviewer"]
+  merge_policy: "只合并通过质量审查且具备 evidence/agent-runs/<run-id> 记录的分支"
+  human_gate: "Code Owner / 架构师最终批准，Agent 不得代替人工终审"
