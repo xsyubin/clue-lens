@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ==============================================================================
-// scripts/mcp-server.mjs
+// scripts/mcp/server.mjs
 // clue-lens SQLite Schema MCP Server (stdio 传输模式)
 // ==============================================================================
 import readline from "node:readline";

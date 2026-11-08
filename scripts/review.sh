@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# scripts/deterministic-review.sh
-# 通用确定性机器前置门禁：驱动 review-checks.list 并生成审计报告
+# scripts/review.sh
+# 确定性机器审查总控门禁：驱动 scripts/review-checks.list 并生成审计报告
 # ==============================================================================
 set -euo pipefail
 
@@ -9,7 +9,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
 REPORT_FILE="evidence/deterministic-review-report.md"
-CHECKS_FILE="${DETERMINISTIC_REVIEW_CHECKS_FILE:-config/review-checks.list}"
+CHECKS_FILE="${DETERMINISTIC_REVIEW_CHECKS_FILE:-scripts/review-checks.list}"
 mkdir -p evidence
 
 if [[ ! -f "${CHECKS_FILE}" ]]; then

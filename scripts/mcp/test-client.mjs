@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ==============================================================================
-// scripts/test-mcp.mjs
+// scripts/mcp/test-client.mjs
 // MCP 服务协议契约、SQLite Schema 探查与 RBAC 安全演练测试
 // ==============================================================================
 import { spawn } from "node:child_process";
@@ -10,7 +10,7 @@ console.log("=== [MCP Test] 开始执行 clue-lens SQLite Schema MCP 契约与�
 
 function runMcpSession(linesToSend, env = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn("node", ["scripts/mcp-server.mjs"], {
+    const child = spawn("node", ["scripts/mcp/server.mjs"], {
       env: { ...process.env, ...env },
       stdio: ["pipe", "pipe", "pipe"],
     });

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# scripts/run-tests.sh
+# scripts/gates/check-tests.sh
 # 全量单元测试、状态机集成测试与 MCP 契约测试门禁
 # ==============================================================================
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 echo "=== [Tests] 正在执行全量单元测试与 RBAC 边界防卫集成测试 ==="

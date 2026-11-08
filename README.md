@@ -11,10 +11,10 @@ Next.js 15（App Router）+ Drizzle ORM + SQLite + Better Auth + Tailwind CSS v4
 要求 Node.js 20.12 或更高版本。
 
 ```bash
-./scripts/init-hooks.sh   # 激活本地 Git 门禁与脚本执行权限
-npm install               # 安装依赖
-npm run setup             # 生成 .env（含随机安全密钥）并初始化数据库表
-npm run dev               # 启动开发服务器
+./scripts/ops/init-hooks.sh   # 激活本地 Git 门禁与脚本执行权限
+npm install                   # 安装依赖
+npm run setup                 # 生成 .env（含随机安全密钥）并初始化数据库表
+npm run dev                   # 启动开发服务器
 ```
 
 打开 http://localhost:3000 ，注册一个账号即可使用仪表盘与示例。
@@ -56,15 +56,13 @@ clue-lens/
 ├── spec/                      # 规格中心单一权威源 (SSOT)
 │   ├── README.md              # SDD 五阶段流转全景
 │   └── clue-lens/             # 业务规格（raw-req -> clarification -> requirements -> design -> tasks）
-├── scripts/                   # 确定性自动化审查与环境脚本
-│   ├── init-hooks.sh          # Git Hooks 激活与权限配置
-│   ├── deterministic-review.sh# 机器审查总控
-│   ├── check-consistency.sh   # 一致性校验
-│   ├── static-security-check.sh# 静态安全与架构红线校验
-│   ├── secret-scan.sh         # 确定性高置信度密钥扫描
-│   └── setup.mjs              # 密钥随机生成与数据目录初始化
-├── config/
-│   └── review-checks.list     # 确定性审查清单列表
+├── scripts/                   # 自动化运维、质量门禁与智能体脚本
+│   ├── review.sh              # 门禁审查唯一总入口（支持 --staged）
+│   ├── review-checks.list     # 门禁审查可插拔配置清单
+│   ├── gates/                 # 质量门禁检查类脚本 (check-*.sh)
+│   ├── ops/                   # 环境配置与数据运维 (setup/init-db/seed/init-hooks)
+│   ├── agent/                 # 多智能体调度与隔离沙盒 (agent-run/worktree)
+│   └── mcp/                   # MCP 协议服务与探查客户端 (server/test-client)
 ├── evidence/                  # 机器审查报告输出归档
 ├── src/
 │   ├── app/                   # App Router 路由组与 Server Actions

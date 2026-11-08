@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# scripts/worktree-clean.sh
+# scripts/agent/worktree-clean.sh
 # 安全移除本工程创建的 worktree；默认拒绝删除有未提交改动的目录。
 # ============================================================================
 set -euo pipefail
@@ -19,7 +19,7 @@ DRY_RUN=0
 
 usage() {
   cat <<'EOF'
-用法：scripts/worktree-clean.sh --name NAME [选项]
+用法：scripts/agent/worktree-clean.sh --name NAME [选项]
 
 选项：
   --name NAME     必填，只允许清理 clue-lens-NAME

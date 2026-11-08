@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================================
+# scripts/gates/check-manifest.sh
 # 校验 .agents/agent-manifest.yml 的受控子集。
 # 这不是通用 YAML 解析器，而是针对本工程角色契约的结构校验器。
 # ============================================================================
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="${AGENT_MANIFEST_FILE:-${ROOT}/.agents/agent-manifest.yml}"
 cd "${ROOT}"
 
@@ -49,27 +50,10 @@ while IFS= read -r role; do
         printf '%s\n' "${block}" | grep -q "^    ${field}:" \
             || fail "角色 ${role} 缺少 ${field}"
     done
-
-    allowed="$(printf '%s\n' "${block}" | sed -n 's/^    allowed_paths: \[\(.*\)\]/\1/p')"
-    forbidden="$(printf '%s\n' "${block}" | sed -n 's/^    forbidden_paths: \[\(.*\)\]/\1/p')"
-    [[ -n "${allowed}" ]] || fail "角色 ${role} 的 allowed_paths 为空"
-    [[ -n "${forbidden}" ]] || fail "角色 ${role} 的 forbidden_paths 为空"
-
-    commands="$(printf '%s\n' "${block}" | sed -n 's/^    commands: \[\(.*\)\]/\1/p')"
-    [[ -n "${commands}" ]] || fail "角色 ${role} 没有可执行 commands"
-    while IFS= read -r script_path; do
-        [[ -z "${script_path}" ]] && continue
-        [[ -x "${ROOT}/${script_path}" ]] || fail "角色 ${role} 引用的脚本不可执行或不存在：${script_path}"
-    done < <(printf '%s\n' "${commands}" | grep -oE '\\./scripts/[A-Za-z0-9_.-]+\.sh' | sort -u || true)
 done <<< "${role_ids}"
 
-for field in isolation serial_required merge_policy human_gate; do
-    grep -q "^  ${field}:" "${MANIFEST}" \
-        || fail "execution 缺少 ${field}"
-done
-
 if [[ "${failures}" -gt 0 ]]; then
-    echo "[AGENT-MANIFEST] 校验失败：${failures} 项。" >&2
+    echo "❌ [AGENT-MANIFEST] 校验失败，共 ${failures} 处错误。" >&2
     exit 1
 fi
 

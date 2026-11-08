@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================================
-# scripts/worktree-new.sh
+# scripts/agent/worktree-new.sh
 # 为并行 AI Coding 任务创建隔离 worktree。默认只创建，不复制或覆盖用户文件。
 #
 # 用法：
-#   ./scripts/worktree-new.sh --name rule-boundary
-#   ./scripts/worktree-new.sh --name rule-boundary --base main --dry-run
+#   ./scripts/agent/worktree-new.sh --name rule-boundary
+#   ./scripts/agent/worktree-new.sh --name rule-boundary --base main --dry-run
 # ============================================================================
 set -euo pipefail
 
@@ -23,7 +23,7 @@ DRY_RUN=0
 
 usage() {
   cat <<'EOF'
-用法：scripts/worktree-new.sh --name NAME [选项]
+用法：scripts/agent/worktree-new.sh --name NAME [选项]
 
 选项：
   --name NAME     必填，任务名，仅允许字母、数字、点、下划线、短横线

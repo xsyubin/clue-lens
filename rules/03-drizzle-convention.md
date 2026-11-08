@@ -87,7 +87,7 @@ export type NewMonopolyClue = typeof monopolyClues.$inferInsert;
 ## 3. 模式演进与迁移工作流 (Migration Workflow)
 
 1. **本地快速开发阶段:**
-   - 修改 `src/db/schema.ts` 后，执行 `node scripts/init-db.mjs` 或 `npm run db:push` 同步至本地 SQLite。
+   - 修改 `src/db/schema.ts` 后，执行 `node scripts/ops/init-db.mjs` 或 `npm run db:push` 同步至本地 SQLite。
 2. **正式发布与版本归档阶段:**
    - 执行 `npm run db:generate` 生成标准 SQL 迁移文件至 `./drizzle/`。
    - 执行 `npm run db:migrate` 执行迁移脚本，确保数据库模式演进具备确定性与版本可追溯性。

@@ -1,0 +1,10 @@
+# Deterministic review checks for clue-lens
+# Add a new executable check script here when a repository-wide invariant is introduced.
+scripts/gates/check-consistency.sh
+scripts/gates/check-security.sh
+scripts/gates/check-secrets.sh
+scripts/gates/check-mcp.sh
+scripts/gates/check-manifest.sh
+scripts/gates/check-types.sh
+scripts/gates/check-tests.sh
+scripts/gates/check-build.sh

@@ -14,5 +14,5 @@ if [[ -n "${staged_files}" ]]; then
     fi
 fi
 
-# 2. 运行确定性前置审查 (自动驱动 secret-scan、类型检查、单测集成与生产构建打包)
-./scripts/deterministic-review.sh --staged
+# 2. 运行确定性前置审查 (自动驱动 check-secrets、类型检查、单测集成与生产构建打包)
+./scripts/review.sh --staged

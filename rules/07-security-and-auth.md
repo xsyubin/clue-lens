@@ -26,7 +26,7 @@ alwaysApply: true
 
 - **禁止提交生产凭据:**
   - `.env` 必须在 `.gitignore` 中被显式忽略。
-  - 项目提供 `.env.example`，其中的默认占位符必须通过 `./scripts/setup.mjs` 在初始化时使用安全伪随机数替换：
+  - 项目提供 `.env.example`，其中的默认占位符必须通过 `./scripts/ops/setup.mjs` 在初始化时使用安全伪随机数替换：
     ```javascript
     randomBytes(32).toString("hex")
     ```

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# scripts/agent-run.sh
+# scripts/agent/agent-run.sh
 # 根据 .agents/agent-manifest.yml 创建隔离 worktree、执行角色命令、
 # 运行 AI 护栏、校验声明 Checks、防卫改动边界并生成 Agent 审计凭证
 # ==============================================================================
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="${AGENT_MANIFEST_FILE:-${ROOT}/.agents/agent-manifest.yml}"
 ROLE=""
 NAME=""
@@ -19,7 +19,7 @@ EXTRA_COMMAND=""
 
 usage() {
     cat <<'EOF'
-用法：scripts/agent-run.sh --role ROLE --name NAME [选项]
+用法：scripts/agent/agent-run.sh --role ROLE --name NAME [选项]
   --role ROLE       manifest 中的角色 id (spec-analyst | fullstack-implementer | quality-reviewer)
   --name NAME       worktree 任务名 / run-id
   --base REF        worktree 基线，默认 HEAD
@@ -47,7 +47,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$ROLE" && -n "$NAME" ]] || { usage >&2; exit 2; }
-"$ROOT/scripts/validate-agent-manifest.sh"
+"$ROOT/scripts/gates/check-manifest.sh"
 
 role_block="$(awk -v role="$ROLE" '
     $0 == "  - id: " role {inside=1}
@@ -92,16 +92,34 @@ fi
 mkdir -p "$PARENT"
 PARENT="$(cd "$PARENT" && pwd -P)"
 WORKTREE="$PARENT/clue-lens-$NAME"
-"$ROOT/scripts/worktree-new.sh" --name "$NAME" --base "$BASE" --parent "$PARENT"
+"$ROOT/scripts/agent/worktree-new.sh" --name "$NAME" --base "$BASE" --parent "$PARENT"
+
+guard_command() {
+    local cmd="$1"
+    # 1. 架构底线护栏：严禁越界修改核心模块排除配置与数据库基础连接
+    if printf '%s' "$cmd" | grep -Eiq 'next\.config\.ts.*better-sqlite3|drizzle\.config\.ts'; then
+        echo "[GUARD-BLOCK] 架构护栏拦截：严禁越界修改核心模块排除配置与数据库基础连接！" >&2
+        return 1
+    fi
+    # 2. 凭证与私钥安全护栏：禁止在命令中直接读取敏感凭据
+    if printf '%s' "$cmd" | grep -Eiq '(^|["/])\.env(\.|["/]|$)|id_rsa|\.pem|\.p12|\.jks|BETTER_AUTH_SECRET|secret[_-]?key|api[_-]?key'; then
+        echo "[GUARD-BLOCK] 凭据护栏拦截：禁止在 Agent 命令行中读取敏感凭据或私钥文件！" >&2
+        return 1
+    fi
+    # 3. 数据外传与越权护栏：禁止在 Agent 运行期执行数据外传或远程推送
+    if printf '%s' "$cmd" | grep -Eiq 'curl[^\n]*(--data|--upload-file|-T)|wget[^\n]*https?://|nc[[:space:]]|scp[[:space:]]|git[[:space:]]+push'; then
+        echo "[GUARD-BLOCK] 传输护栏拦截：禁止在 Agent 运行期执行潜在数据外传或远程写入命令！" >&2
+        return 1
+    fi
+    return 0
+}
 
 run_command() {
     local command="$1"
     echo "[AGENT-RUN] 预审工具命令安全护栏：$command"
-    if [[ -x "${ROOT}/.agents/hooks/pre-tool-guard.sh" ]]; then
-        if ! printf '%s\n' "$command" | "${ROOT}/.agents/hooks/pre-tool-guard.sh"; then
-            echo "❌ [AGENT-RUN] 命令被 AI 运行期护栏拦截！" >&2
-            return 1
-        fi
+    if ! guard_command "$command"; then
+        echo "❌ [AGENT-RUN] 命令被 AI 运行期护栏拦截！" >&2
+        return 1
     fi
     echo "[AGENT-RUN] 执行命令：$command"
     (cd "$WORKTREE" && bash -lc "$command")
@@ -129,19 +147,19 @@ run_single_check() {
             (cd "$WORKTREE" && npm run typecheck) || res="FAIL"
             ;;
         "static-security-check")
-            (cd "$WORKTREE" && ./scripts/static-security-check.sh) || res="FAIL"
+            (cd "$WORKTREE" && ./scripts/gates/check-security.sh) || res="FAIL"
             ;;
         "check-consistency")
-            (cd "$WORKTREE" && ./scripts/check-consistency.sh) || res="FAIL"
+            (cd "$WORKTREE" && ./scripts/gates/check-consistency.sh) || res="FAIL"
             ;;
         "secret-scan")
-            (cd "$WORKTREE" && ./scripts/secret-scan.sh) || res="FAIL"
+            (cd "$WORKTREE" && ./scripts/gates/check-secrets.sh) || res="FAIL"
             ;;
         "check-mcp")
-            (cd "$WORKTREE" && ./scripts/check-mcp.sh) || res="FAIL"
+            (cd "$WORKTREE" && ./scripts/gates/check-mcp.sh) || res="FAIL"
             ;;
         "deterministic-review")
-            (cd "$WORKTREE" && ./scripts/deterministic-review.sh) || res="FAIL"
+            (cd "$WORKTREE" && ./scripts/review.sh) || res="FAIL"
             ;;
         *)
             echo "⚠️ [AGENT-CHECK] 未知检查项: $chk"
@@ -271,7 +289,7 @@ EVIDENCE_FILE="${EVIDENCE_DIR}/${ROLE}.md"
 echo "📜 [AGENT-RUN] 审计凭证已生成: ${EVIDENCE_FILE}"
 
 if [[ "$CLEANUP" -eq 1 ]]; then
-    "$ROOT/scripts/worktree-clean.sh" --name "$NAME" --parent "$PARENT"
+    "$ROOT/scripts/agent/worktree-clean.sh" --name "$NAME" --parent "$PARENT"
 else
     echo "[AGENT-RUN] 运行完成，worktree 保留：$WORKTREE"
 fi

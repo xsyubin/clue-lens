@@ -14,9 +14,9 @@ alwaysApply: true
    - 提交前必须执行 `npm run typecheck`。
    - `tsconfig.json` 保持 `strict: true`，严禁提交存在 `any` 泛滥或 TypeScript 类型报错的代码。
 2. **确定性安全与规范门禁 (Shell Scripts):**
-   - `./scripts/check-consistency.sh`: 验证核心物理表名、模型类、SDD 契约与架构文档定义零漂移。
-   - `./scripts/static-security-check.sh`: 静态扫描 Server Actions 是否遗漏鉴权守卫、nextCookies 插件与 C++ 原生驱动配置。
-   - `./scripts/secret-scan.sh`: 严防任何生产密钥或私有 Token 误入版本控制。
+   - `./scripts/gates/check-consistency.sh`: 验证核心物理表名、模型类、SDD 契约与架构文档定义零漂移。
+   - `./scripts/gates/check-security.sh`: 静态扫描 Server Actions 是否遗漏鉴权守卫、nextCookies 插件与 C++ 原生驱动配置。
+   - `./scripts/gates/check-secrets.sh`: 严防任何生产密钥或私有 Token 误入版本控制。
    - `npm run test:mcp`: 验证 MCP 智能体探查契约、RBAC 角色拦截与涉密黑名单安全准入。
 3. **业务逻辑与自动化测试分级判定矩阵 (Node Test Runner / tsx):**
    测试框架统一采用 Node 原生测试驱动（`tsx --test src/tests/*.test.ts`），按代码逻辑类型实施精准分层，严禁一刀切与形式主义：
@@ -31,4 +31,4 @@ alwaysApply: true
 
 1. **严禁空断言伪测试:** 单测严禁只运行函数而不做 `assert` 断言，严禁编写 `expect(true).toBe(true)` 类欺骗门禁的无意义代码。
 2. **严禁在测试中篡改生产防卫:** 测试必须在真实或受控的隔离环境（如 SQLite 本地内存/单文件、合法 Session Mock）中执行，严禁通过修改业务代码的生产逻辑来“迎合”测试。
-3. **自动化前置审查一票否决:** 本地开发或 CI 自动化构建时统一执行 `./scripts/deterministic-review.sh`。测试套件存在任何一项 `FAIL` 时，严禁合并代码或交付交付生产。
+3. **自动化前置审查一票否决:** 本地开发或 CI 自动化构建时统一执行 `./scripts/review.sh`。测试套件存在任何一项 `FAIL` 时，严禁合并代码或交付交付生产。

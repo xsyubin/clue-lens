@@ -214,7 +214,7 @@ flowchart LR
 sequenceDiagram
     autonumber
     actor Agent as AI Coding Agent (Cursor / IDE)
-    participant Stdio as Stdio JSON-RPC (scripts/mcp-server.mjs)
+    participant Stdio as Stdio JSON-RPC (scripts/mcp/server.mjs)
     participant Security as McpSecurityContext (RBAC)
     participant Inspector as SQLite Schema Inspector
     participant SQLite as data/app.db

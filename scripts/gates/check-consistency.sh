@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# scripts/check-consistency.sh
+# scripts/gates/check-consistency.sh
 # 全栈工程一致性与规范完整性校验门禁
 # ==============================================================================
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 echo "=== [Consistency Check] 开始执行工程命名与核心一致性校验 ==="
@@ -38,11 +38,8 @@ check_forbidden_pattern() {
     local dir_path="$1"
     local pattern="$2"
     local desc="$3"
-    local matches
-    matches=$(grep -rn "${pattern}" "${dir_path}" --exclude="*.sh" --exclude-dir="node_modules" --exclude-dir=".next" --exclude-dir=".git" 2>/dev/null || true)
-    if [ -n "${matches}" ]; then
-        echo "❌ [FORBIDDEN] 发现禁止出现的残留项 (${desc}):"
-        echo "${matches}" | head -n 5
+    if grep -r -q "${pattern}" "${dir_path}" 2>/dev/null; then
+        echo "❌ [VIOLATION] ${dir_path} 发现违规残留: ${desc} (pattern: ${pattern})"
         FAILURES=$((FAILURES + 1))
     else
         echo "✅ [CLEAN] 无违规残留: ${desc}"
@@ -70,6 +67,8 @@ check_file_exists "components.json"
 check_file_exists "drizzle.config.ts"
 check_file_exists "next.config.ts"
 check_file_exists "postcss.config.mjs"
+check_file_exists "scripts/review.sh"
+check_file_exists "scripts/review-checks.list"
 check_file_exists "src/app/globals.css"
 check_file_exists "src/db/index.ts"
 check_file_exists "src/db/schema.ts"
@@ -97,11 +96,11 @@ check_content_contains "AGENTS.md" "架构底线与安全红线" "AGENTS.md 约�
 
 echo "--- 6. MCP 智能体服务与配置检查 ---"
 check_file_exists ".mcp.json"
-check_file_exists "scripts/mcp-server.mjs"
-check_file_exists "scripts/test-mcp.mjs"
+check_file_exists "scripts/mcp/server.mjs"
+check_file_exists "scripts/mcp/test-client.mjs"
 check_file_exists "src/mcp/index.ts"
 check_file_exists "src/mcp/schema-inspector.ts"
-check_content_contains "scripts/mcp-server.mjs" "inspect_db_schema" "MCP 工具 inspect_db_schema"
+check_content_contains "scripts/mcp/server.mjs" "inspect_db_schema" "MCP 工具 inspect_db_schema"
 check_content_contains ".mcp.json" "clue-mcp-server" "MCP 服务配置 clue-mcp-server"
 
 echo "--- 7. SDD 技能库与智能体契约检查 (.agents) ---"
@@ -113,8 +112,8 @@ check_file_exists ".agents/skills/spec-design/SKILL.md"
 check_file_exists ".agents/skills/spec-tasks/SKILL.md"
 check_file_exists ".agents/skills/spec-impl/SKILL.md"
 check_file_exists ".agents/skills/spec-review/SKILL.md"
-check_file_exists "scripts/validate-agent-manifest.sh"
-check_file_exists "scripts/agent-run.sh"
+check_file_exists "scripts/gates/check-manifest.sh"
+check_file_exists "scripts/agent/agent-run.sh"
 
 echo "=================================================================="
 if [ "${FAILURES}" -gt 0 ]; then

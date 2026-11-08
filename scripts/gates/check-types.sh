@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# scripts/check-type.sh
-# 全量 TypeScript 静态类型无死角检查门禁
+# scripts/gates/check-types.sh
+# 全量 TypeScript 静态类型无死角检查与 ESLint 规范门禁
 # ==============================================================================
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 echo "=== [Type Check] 正在执行全量 TypeScript 静态类型无死角检查 ==="

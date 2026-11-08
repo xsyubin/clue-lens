@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# scripts/secret-scan.sh
+# scripts/gates/check-secrets.sh
 # 确定性密钥扫描：阻断高置信度私钥与云厂商 Token 泄露
 # ==============================================================================
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 files="${1:-}"

@@ -1,32 +1,54 @@
-# 杭州烟草后端工程 Code Owner 配置
-# 以下为杭州烟草组织团队别名；正式接入 GitLab 时映射到平台真实团队账号。
-
-* @hangzhou-tobacco/architecture-owner
-
 # ==============================================================================
-# 🔴 高危治理与控制文件 (强所有权保护：禁止 AI 自我放行)
+# clue-lens 全栈工程 Code Owner 配置 (GitLab)
+# 组织与角色团队别名，在正式接入企业 GitLab 时映射为平台真实账号或群组。
 # ==============================================================================
-/rules/                     @hangzhou-tobacco/architecture-owner
-/spec/                      @hangzhou-tobacco/architecture-owner
-/.githooks/                 @hangzhou-tobacco/quality-owner
-/.gitlab/                   @hangzhou-tobacco/quality-owner @hangzhou-tobacco/architecture-owner
-CLAUDE.md                   @hangzhou-tobacco/architecture-owner
-AGENTS.md                   @hangzhou-tobacco/architecture-owner
-tasks.md                    @hangzhou-tobacco/architecture-owner
-.gitlab-ci.yml              @hangzhou-tobacco/quality-owner @hangzhou-tobacco/architecture-owner
+
+* @clue-lens/architecture-owner
 
 # ==============================================================================
-# 🔴 高危生产配置与核心数据 DDL (架构师专审)
+# 🔴 架构底线、SDD 规格与智能体契约 (强所有权保护：架构师专审，严禁 AI 自我放行)
 # ==============================================================================
-*application-prod.yml       @hangzhou-tobacco/architecture-owner
-/sql/                       @hangzhou-tobacco/architecture-owner
-*.sql                       @hangzhou-tobacco/architecture-owner
+/rules/                     @clue-lens/architecture-owner
+/spec/                      @clue-lens/architecture-owner
+AGENTS.md                   @clue-lens/architecture-owner
+ARCHITECTURE.md             @clue-lens/architecture-owner
+.agents/                    @clue-lens/architecture-owner
 
 # ==============================================================================
-# 🟡 核心与常规业务代码模块
+# 🔴 质量门禁、安全护栏与 Git Hooks (质量与安全团队专审)
 # ==============================================================================
-/ticket-api/                @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
-/ticket-biz/                @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
-/ticket-dal/                @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
-/ticket-common/             @hangzhou-tobacco/backend-owner @hangzhou-tobacco/architecture-owner
-/ticket-mcp-server/         @hangzhou-tobacco/security-owner @hangzhou-tobacco/architecture-owner
+/.githooks/                 @clue-lens/quality-owner
+/.gitlab/                   @clue-lens/quality-owner @clue-lens/architecture-owner
+/scripts/gates/             @clue-lens/quality-owner @clue-lens/architecture-owner
+/scripts/review.sh          @clue-lens/quality-owner @clue-lens/architecture-owner
+/scripts/review-checks.list @clue-lens/quality-owner @clue-lens/architecture-owner
+
+# ==============================================================================
+# 🔴 数据库模型、ORM 与持久化迁移 (数据架构专审)
+# ==============================================================================
+/src/db/                    @clue-lens/database-owner @clue-lens/architecture-owner
+/drizzle/                   @clue-lens/database-owner @clue-lens/architecture-owner
+drizzle.config.ts           @clue-lens/database-owner @clue-lens/architecture-owner
+scripts/ops/init-db.mjs     @clue-lens/database-owner @clue-lens/architecture-owner
+
+# ==============================================================================
+# 🔴 认证鉴权、会话隔离与敏感凭据 (安全专审)
+# ==============================================================================
+src/lib/auth*.ts            @clue-lens/security-owner @clue-lens/architecture-owner
+src/lib/session.ts          @clue-lens/security-owner @clue-lens/architecture-owner
+
+# ==============================================================================
+# 🟡 MCP 智能体协议服务与探查能力 (工具与安全专审)
+# ==============================================================================
+/src/mcp/                   @clue-lens/security-owner @clue-lens/architecture-owner
+/scripts/mcp/               @clue-lens/security-owner @clue-lens/architecture-owner
+.mcp.json                   @clue-lens/security-owner @clue-lens/architecture-owner
+
+# ==============================================================================
+# 🟢 全栈业务逻辑、Server Actions 与前端组件 (全栈业务组常规审批)
+# ==============================================================================
+/src/app/                   @clue-lens/fullstack-owner
+/src/components/            @clue-lens/fullstack-owner
+/src/tests/                 @clue-lens/fullstack-owner @clue-lens/quality-owner
+package.json                @clue-lens/architecture-owner
+next.config.ts              @clue-lens/architecture-owner

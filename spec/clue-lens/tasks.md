@@ -232,7 +232,7 @@ graph TD
 - [x] 5.2 确定性质量门禁与全流程构建回归
   - [x] 运行 `npm run typecheck` 验证全项目 TypeScript 静态类型无死角通过
   - [x] 运行 `npm run build` 确保 Next.js 生产包编译成功，无原生 C++ 模块打包泄漏
-  - [x] 运行 `./scripts/static-security-check.sh` 验证服务端会话鉴权与 SQL 参数化红线
-  - [x] 运行 `./scripts/deterministic-review.sh` 输出全套确定性审查报告
+  - [x] 运行 `./scripts/gates/check-security.sh` 验证服务端会话鉴权与 SQL 参数化红线
+  - [x] 运行 `./scripts/review.sh` 输出全套确定性审查报告
   - _Requirements: 全部需求_
   - _Depends: 5.1_
