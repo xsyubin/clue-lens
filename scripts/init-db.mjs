@@ -174,6 +174,7 @@ CREATE INDEX IF NOT EXISTS idx_clues_type ON monopoly_clues(type);
 CREATE INDEX IF NOT EXISTS idx_clues_status ON monopoly_clues(status);
 CREATE INDEX IF NOT EXISTS idx_clues_target_name ON monopoly_clues(target_name);
 CREATE INDEX IF NOT EXISTS idx_clues_discovery_date ON monopoly_clues(discovery_date);
+CREATE INDEX IF NOT EXISTS idx_clues_user_id ON monopoly_clues(user_id);
 
 -- 11. 专卖监管线索流转时间轴历史表
 CREATE TABLE IF NOT EXISTS clue_timeline_logs (

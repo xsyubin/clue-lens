@@ -9,12 +9,15 @@
 - **运行环境:** 本地 SQLite 单文件数据库（`data/app.db`），开启 WAL 模式与外键约束；Node.js >= 20.12。
 - **智能体 MCP 基建:** 内置 stdio 模式 Model Context Protocol 服务（`clue-mcp-server`），为 AI Coding Agent 提供只读数据库元数据探查（`inspect_db_schema`）与细粒度 RBAC 鉴权审计。
 - **架构底线与安全红线:**
-  1. **会话鉴权与租户数据隔离红线:** 任何涉及用户数据的 Server Action 或受保护 Route Handler，必须在方法入口显式调用 `const session = await requireSession()`。数据库写查操作**必须强制显式绑定 `eq(table.userId, session.user.id)`**，严禁信任客户端传入的 `userId`，严禁越权无主查询。
+  1. **会话鉴权与数据隔离/流转防卫红线:** 任何涉及业务数据的 Server Action 或受保护 Route Handler，必须在方法入口显式调用 `const session = await requireSession()`。用户个人私有数据（如 todos）写查操作**必须强制显式绑定 `eq(table.userId, session.user.id)`**；政企协同监管数据（如 `monopoly_clues`）写查与状态跃迁**必须强制实施“状态机前置守卫 + 角色准入（Role Guard）+ 时间轴/安全审计全程留痕”**，严禁信任客户端传入的无主变更。
   2. **边界防御与 Zod 校验红线:** 所有外部请求入参（FormData / JSON / URL 参数）必须在进入业务逻辑前通过 `zod` Schema 的 `safeParse` 进行严格校验。校验失败应统一返回 `{ ok: false, error: string }`，严禁未经校验直接拼装写库。
   3. **SQL 安全与 Drizzle 查询规范:** 100% 采用 Drizzle ORM 类型安全 API（`db.select()`, `db.insert()`, `db.update()`, `db.delete()`）。严禁任何形式的字符串拼接 SQL；如使用 `sql` 标签，必须使用参数化插值语法。
   4. **原生模块与运行时架构约束:** `better-sqlite3` 是原生 C++ 模块，`next.config.ts` 必须显式声明 `serverExternalPackages: ["better-sqlite3"]`。SQLite 连接必须在开发模式下缓存至 `globalThis` 以避免 HMR 热更新泄漏句柄。
-  5. **敏感信息脱敏与安全底线:** 客户手机号等敏感信息在前端列表展示或非审计日志打印中必须进行掩码脱敏（如 `138****0000`）。严禁向客户端泄露密码哈希、Secret 密钥或会话凭据。
+  5. **敏感信息脱敏与安全底线:** 涉案当事人手机号等敏感信息在前端列表展示或非审计日志打印中必须统一调用 `maskMobile` 进行掩码脱敏（如 `138****0000`）。严禁向客户端泄露密码哈希、Secret 密钥或会话凭据。
   6. **MCP 探查与审计安全红线:** MCP 工具 `inspect_db_schema` 仅允许探查表结构元数据（DDL、列定义、外键、索引），严禁读取真实业务敏感数据；`GUEST` 角色禁止访问任何诊断工具；`ops_user_credential` 属于高危涉密黑名单，触发访问必须坚决阻断并告警。
+
+> [!NOTE]
+> 系统的分层调用时序、数据库 ER 关系与物理字段字典、部署拓扑及前端设计系统，以 [ARCHITECTURE.md](ARCHITECTURE.md) 为唯一事实源（SSOT）；本总纲侧重规则索引、安全军规与工程门禁。
 
 ## 规则与规格索引
 

@@ -24,27 +24,25 @@ graph TD
         EXPORTER[报告生成服务<br/>src/lib/report-exporter.ts]
     end
 
-    subgraph 数据访问层_DAL_Data_Access_Layer
-        DAL[数据访问函数 DAL<br/>src/dal/*.ts 或 src/db/queries/*.ts]
+    subgraph 数据访问与模型层_Data_Access_Layer
+        DRIZZLE[Drizzle ORM 类型安全查询<br/>src/db/index.ts & schema.ts]
         SESSION[会话与鉴权门禁<br/>src/lib/session.ts]
         VALIDATION[Zod 参数防卫<br/>src/lib/validations/*.ts]
     end
 
     subgraph 持久化与驱动层_Persistence_Layer
-        DRIZZLE[Drizzle ORM<br/>src/db/index.ts & schema.ts]
         SQLITE[(SQLite 单文件数据库<br/>data/app.db - WAL模式)]
     end
 
     CLIENT -->|表单提交 / RPC调用| ACTION
     CLIENT -->|页面跳转| RSC
-    RSC -->|零API开销/只读聚合| DAL
-    RSC -->|React cache 去重| SESSION
+    RSC -->|类型安全查询 / React cache| DRIZZLE
+    RSC -->|会话解析与鉴权| SESSION
     ACTION -->|1. 身份守卫 requireSession| SESSION
     ACTION -->|2. 入参防卫 safeParse| VALIDATION
     ACTION -->|3. 核心业务计算| ANOMALY
     ACTION -->|3. 核心业务计算| ADVISORY
-    ACTION -->|4. 数据写入与状态跃迁| DAL
-    DAL -->|类型安全查询构建| DRIZZLE
+    ACTION -->|4. 数据写入与状态跃迁| DRIZZLE
     DRIZZLE -->|原生连接| SQLITE
 ```
 
@@ -54,8 +52,8 @@ graph TD
 |---|---|---|---|
 | **1. 表现与入口层** | `src/app/**/page.tsx`<br>`src/app/actions/**`<br>`src/components/**` | - **RSC 页面**：服务端直接调 DAL 查数，直接流式返回 HTML，享受零网络开销。<br>- **Server Actions**：作为写操作的 Controller，强制执行“四部曲”：`requireSession` 鉴权 $\rightarrow$ Zod 防御 $\rightarrow$ 调用 DAL/领域逻辑 $\rightarrow$ `revalidatePath`。<br>- **Client Components**：专注前端用户交互与表单输入。 | ❌ 严禁在组件中手写拼接 SQL<br>❌ 严禁写冗余的 J2EE 风格纯透传 Controller<br>❌ 严禁客户端直接信任未校验的入参 |
 | **2. 领域与规则层** | `src/lib/*-detector.ts`<br>`src/lib/*-engine.ts`<br>`src/lib/report-*.ts` | 封装**无状态纯函数（Pure Functions）**，如 5 维异常计算规则、专家处置规则树、Markdown 模板渲染。 | ❌ 不与特定框架生命周期深度耦合<br>❌ 不直接操作 HTTP 请求上下文，保证 100% 单元测试免 Mock 运行 |
-| **3. 数据访问层 (DAL)** | `src/dal/**/*.ts`<br>或 `src/db/queries/**/*.ts` | 集中封装 Drizzle ORM 的查询语句（如 `getClueById`、`listCluesWithFilter`、`upsertCluesBatch`）。配合 React `cache()` 实现请求期去重。 | ❌ 不在 DAL 内部直接读取客户端请求头或 Cookie<br>❌ 不把复杂的界面交互逻辑混入数据层 |
-| **4. 持久化与实体层** | `src/db/schema.ts`<br>`src/db/index.ts` | 唯一权威物理 DDL 声明与 TypeScript 类型推导源。定义主键、唯一约束、外键级联与索引。 | ❌ 严禁维护两套分离的 Entity 类与 DTO 类（Drizzle `$inferSelect` 原生推导） |
+| **3. 数据持久与实体层** | `src/db/schema.ts`<br>`src/db/index.ts` | 唯一权威物理 DDL 声明与 TypeScript 类型推导源。使用 Drizzle 强类型查询构造器直接提供读写能力（复杂统计可沉淀至 `src/db/queries/`）。 | ❌ 严禁维护两套分离的 Entity 类与 DTO 类（Drizzle `$inferSelect` 原生推导）<br>❌ 严禁手写拼接 SQL |
+| **4. 驱动与存储层** | `better-sqlite3`<br>`data/app.db` | 本地单文件数据库，配置 WAL 模式与外键级联，开发模式通过 `globalThis` 缓存句柄防泄漏。 | ❌ 严禁在页面或组件层直接 import 原生 `better-sqlite3` 驱动 |
 
 ---
 
@@ -94,7 +92,7 @@ erDiagram
         text type "线索类型"
         text target_name "涉案经营主体"
         text risk_level "高/中/低"
-        real amount "涉及金额"
+        integer amount "涉及金额(元)"
         text department "责任部门"
         text handler "责任人"
         text deadline "办理期限"

@@ -13,14 +13,17 @@ alwaysApply: true
 
 ## 2. 字段与表命名规约
 - **表名与数据库列名:** 一律使用 **snake_case**（小写字母 + 下划线）。
-  - 例：`user_id`, `created_at`, `email_verified`, `customer_phone`。
+  - 例：`user_id`, `clue_no`, `discovery_date`, `risk_level`, `operator_role`。
 - **TypeScript 属性名:** 一律使用 **camelCase**（小驼峰）。
-  - 例：`userId: text("user_id")`, `createdAt: integer("created_at")`。
-- **表名复数约定:** 业务表统一采用复数或名词实体全称（如 `todos`, `clues`, `clue_follow_ups`）；Better Auth 核心表保持标准名字（`user`, `session`, `account`, `verification`）。
+  - 例：`userId: text("user_id")`, `clueNo: text("clue_no")`, `createdAt: integer("created_at")`。
+- **表名约定:**
+  - 核心专卖监管实体表：采用实体全称及复数（`monopoly_clues`, `clue_timeline_logs`, `system_audit_logs`, `clue_mcp_audit_log`）。
+  - 基础认证与示例表：遵循 Better Auth 标准名（`user`, `session`, `account`, `verification`）与基础模块（`todos`, `clues`, `clue_follow_ups`）。
 
-## 3. 标准审计与时间字段
+## 3. 标准审计与时间/日期字段
 
-所有新增的业务主表必须包含统一的时间审计字段：
+### 3.1 系统审计时间戳 (Integer Timestamp)
+所有核心业务主表必须包含统一的创建与更新时间审计字段：
 
 ```typescript
 createdAt: integer("created_at", { mode: "timestamp" })
@@ -28,32 +31,41 @@ createdAt: integer("created_at", { mode: "timestamp" })
   .$defaultFn(() => new Date()),
 updatedAt: integer("updated_at", { mode: "timestamp" })
   .notNull()
-  .$defaultFn(() => new Date())
-  .$onUpdate(() => new Date()),
+  .$defaultFn(() => new Date()),
 ```
+- SQLite 中时间审计字段统一使用整型时间戳模式（`{ mode: "timestamp" }`），保证物理排序高效。数据变更时在 Server Actions 中显式赋值 `updatedAt: new Date()`。
 
-- SQLite 中时间推荐使用整型时间戳模式（`{ mode: "timestamp" }`），确保排序高效且时区无关。
+### 3.2 业务日期规约 (Text "YYYY-MM-DD")
+- 涉及案发发现日期、办理时限、现场核查日期等业务日期字段（如 `discoveryDate`, `deadline`, `checkDate`），统一采用 ISO 8601 标准日期文本模式（`text` 字段，格式 `YYYY-MM-DD`）。
+- 确保 Excel 批量导入导出、跨时区计算及前端日历选择器对齐零误差。
 
 ## 4. 外键约束与级联删除
 
-- 业务表关联用户表必须显式声明级联删除：
+- 业务主表关联用户表必须显式声明级联删除：
   ```typescript
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   ```
-- 关联从表（如跟进记录关联线索主表）必须在删除主记录时级联清理，杜绝产生孤儿悬空记录。
+- 流转从表（如 `clue_timeline_logs` 关联 `monopoly_clues`）必须在删除主记录时级联清理，杜绝产生孤儿悬空记录：
+  ```typescript
+  clueId: text("clue_id")
+    .notNull()
+    .references(() => monopolyClues.id, { onDelete: "cascade" }),
+  ```
 
 ## 5. 索引规划规约
 
-- 所有高频外键（如 `userId`、`clueId`）必须显式建立单列或复合索引：
+- **高频外键索引（强制）:** 所有高频外键（如 `userId`、`clueId`）必须显式建立单列索引，避免联表查询全表扫描：
   ```typescript
   (t) => [
-    index("clues_user_idx").on(t.userId),
-    index("clues_created_at_idx").on(t.createdAt),
+    index("idx_clues_user_id").on(t.userId),
+    index("idx_timeline_clue_id").on(t.clueId),
   ]
   ```
-- 唯一性业务约束（如用户唯一邮箱、第三方绑定）必须声明 `.unique()`。
+- **业务检索与过滤维度索引:**
+  - 唯一性业务编号（如专卖线索编号 `clueNo`）必须声明 `.unique()` 并建立索引 `index("idx_clues_clue_no").on(t.clueNo)`。
+  - 高频过滤与统计维度必须建立索引：`region`（辖区）、`status`（状态机）、`type`（违法案由）、`targetName`（经营对象）、`discoveryDate`（发现日期）。
 
 ## 6. WAL 模式与存储引擎配置
 - 必须在创建连接时激活 `sqlite.pragma("journal_mode = WAL")` 和 `sqlite.pragma("foreign_keys = ON")`。

@@ -193,6 +193,7 @@ export const monopolyClues = sqliteTable(
     index("idx_clues_status").on(t.status),
     index("idx_clues_target_name").on(t.targetName),
     index("idx_clues_discovery_date").on(t.discoveryDate),
+    index("idx_clues_user_id").on(t.userId),
   ],
 );
 
