@@ -11,7 +11,7 @@ export default async function AppLayout({
   const session = await requireSession();
 
   return (
-    <RoleProvider>
+    <RoleProvider initialRole={(session.user.role as any) || "综合管理人员"}>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
         <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">

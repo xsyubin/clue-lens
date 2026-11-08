@@ -60,7 +60,6 @@ export function HandlingForm({
       checkDate,
       checkResult,
       measures,
-      operatorRole: currentRole,
     });
 
     setIsSubmitting(false);

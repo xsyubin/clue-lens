@@ -106,6 +106,7 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     assert.equal(clue.status, "PENDING_ASSIGN", "导入初始状态必须为 PENDING_ASSIGN");
 
     // 2. When: 综合管理人员选择责任人“李四”，设定办理期限为 7 天后，勾选“需要复核=是”，提交分派
+    process.env.TEST_USER_ROLE = "综合管理人员";
     const sevenDaysLater = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0]!;
     const dispatchRes = await dispatchClueAction({
       clueId: clue.id,
@@ -113,7 +114,6 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
       handler: "李四",
       deadline: sevenDaysLater,
       needReview: true,
-      operatorRole: "综合管理人员",
     });
     assert.equal(dispatchRes.ok, true, `分派应当成功: ${dispatchRes.error}`);
 
@@ -136,13 +136,13 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     const inLiList = dashboardData.clues.some((c) => c.clueNo === "CLUE-2026-E2E-001");
     assert.equal(inLiList, true, "李四待办列表中必须包含该线索");
 
-    // And: 李四填报核查结论并提交办结后，状态自动跃迁为 PENDING_REVIEW
+    // And: 李四（线索核查人员）填报核查结论并提交办结后，状态自动跃迁为 PENDING_REVIEW
+    process.env.TEST_USER_ROLE = "线索核查人员";
     const submitRes = await submitHandlingAction({
       clueId: clue.id,
       checkDate: "2026-11-03",
       checkResult: "现场核查属实，存在超范围无证销售新型卷烟行为",
       measures: "依法责令限期整改，现场查扣涉案卷烟 40 条，立案查处",
-      operatorRole: "线索核查人员",
     });
     assert.equal(submitRes.ok, true, `办结提交应当成功: ${submitRes.error}`);
     if ("nextStatus" in submitRes) {
@@ -157,11 +157,11 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     assert.ok(handledClue.checkResult?.includes("现场核查属实"));
 
     // And: 部门负责人点击“复核通过”，状态变更为 COMPLETED
+    process.env.TEST_USER_ROLE = "部门负责人";
     const reviewRes = await reviewClueAction({
       clueId: clue.id,
       action: "APPROVE",
       comment: "现场核查事实清楚，处置措施规范得当，准予办结",
-      operatorRole: "部门负责人",
     });
     assert.equal(reviewRes.ok, true, `复核审批应当成功: ${reviewRes.error}`);
     if ("nextStatus" in reviewRes) {
@@ -179,7 +179,6 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     const closeRes = await closeClueAction({
       clueId: clue.id,
       closeReason: "全流程合规履职闭环，予以结案归档",
-      operatorRole: "部门负责人",
     });
     assert.equal(closeRes.ok, true, `归档应当成功: ${closeRes.error}`);
 
@@ -238,12 +237,12 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     assert.equal(inserted.status, "PENDING_REVIEW");
 
     // 2. When: 部门负责人点击“驳回”并输入原因“缺少现场检查笔录与涉案烟草抽样照片”
+    process.env.TEST_USER_ROLE = "部门负责人";
     const rejectComment = "缺少现场检查笔录与涉案烟草抽样照片，请补充后重报";
     const rejectRes = await reviewClueAction({
       clueId: inserted.id,
       action: "REJECT",
       comment: rejectComment,
-      operatorRole: "部门负责人",
     });
     assert.equal(rejectRes.ok, true, `驳回应当成功: ${rejectRes.error}`);
     if ("nextStatus" in rejectRes) {
@@ -269,12 +268,12 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     assert.equal(rejectLog.comment, rejectComment);
 
     // And: 核查人员李四（此处为王五）重新进入该线索，补充措施后再次提交，状态重新进入 PENDING_REVIEW
+    process.env.TEST_USER_ROLE = "线索核查人员";
     const resubmitRes = await submitHandlingAction({
       clueId: inserted.id,
       checkDate: today,
       checkResult: "已补充现场勘验笔录、执法记录仪视频截图及涉案烟草封存抽样照片",
       measures: "证据链已补齐，完成立案查扣手续并移送处理",
-      operatorRole: "线索核查人员",
     });
     assert.equal(resubmitRes.ok, true);
     if ("nextStatus" in resubmitRes) {
@@ -288,11 +287,11 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     assert.equal(resubmittedClue.status, "PENDING_REVIEW");
 
     // And: 部门负责人此时复核通过，最终状态成功进入 COMPLETED
+    process.env.TEST_USER_ROLE = "部门负责人";
     const finalApproveRes = await reviewClueAction({
       clueId: inserted.id,
       action: "APPROVE",
       comment: "补充材料充分详实，事实清楚，复核通过",
-      operatorRole: "部门负责人",
     });
     assert.equal(finalApproveRes.ok, true);
     if ("nextStatus" in finalApproveRes) {
@@ -309,8 +308,9 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
   // ============================================================================
   // GWT 场景 3【超期时限与非法入参阻断防御】
   // ============================================================================
-  test("GWT 场景 3【超期时限与非法入参阻断防御: 过去日期拦截、空责任人拦截、驳回未填原因拦截】", async () => {
+  test("GWT 场景 3【超期时限与非法入参阻断防御: 过去日期拦截、空责任人拦截、驳回未填原因拦截与伪造角色防御】", async () => {
     // 1. Given: 分派表单处于打开状态，存在一条处于 PENDING_ASSIGN 的线索
+    process.env.TEST_USER_ROLE = "综合管理人员";
     const today = new Date().toISOString().split("T")[0]!;
     const [clue] = await db
       .insert(monopolyClues)
@@ -337,7 +337,6 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
       handler: "张三",
       deadline: yesterday,
       needReview: true,
-      operatorRole: "综合管理人员",
     });
 
     // 3. Then: 服务端拦截，返回校验错误，数据库状态保持 PENDING_ASSIGN 不发生任何改变
@@ -357,7 +356,6 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
       handler: "",
       deadline: today,
       needReview: true,
-      operatorRole: "综合管理人员",
     });
 
     assert.equal(emptyHandlerRes.ok, false);
@@ -375,28 +373,28 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
       handler: "张三",
       deadline: today,
       needReview: true,
-      operatorRole: "综合管理人员",
     });
+
+    process.env.TEST_USER_ROLE = "线索核查人员";
     await submitHandlingAction({
       clueId: clue.id,
       checkDate: today,
       checkResult: "核查完成",
       measures: "已下达通知书",
-      operatorRole: "线索核查人员",
     });
 
-    // 故意空 comment 驳回
+    // 故意空 comment 驳回（切换为部门负责人）
+    process.env.TEST_USER_ROLE = "部门负责人";
     const emptyCommentRejectRes = await reviewClueAction({
       clueId: clue.id,
       action: "REJECT",
       comment: "",
-      operatorRole: "部门负责人",
     });
 
     // 6. Then: 服务端状态守卫拒绝执行，提示“驳回时必须录入驳回原因”，线索仍保持 PENDING_REVIEW
     assert.equal(emptyCommentRejectRes.ok, false);
     assert.ok(
-      emptyCommentRejectRes.error?.includes("驳回原因必填") ||
+      emptyCommentRejectRes.error?.includes("驳回原因") ||
         emptyCommentRejectRes.error?.includes("必须录入驳回原因")
     );
 
@@ -407,23 +405,24 @@ describe("专卖监管线索全生命周期状态机与端到端 GWT 场景自�
     assert.equal(checkClue.status, "PENDING_REVIEW", "驳回原因缺失时状态必须保持 PENDING_REVIEW");
 
     // 7. Extra Guard: 越权与非法状态机守卫
-    // 非部门负责人尝试复核审批 -> 权限拦截
+    // 非部门负责人尝试复核审批 -> 权限拦截（即使客户端伪造 operatorRole: "部门负责人" 也坚决阻断）
+    process.env.TEST_USER_ROLE = "线索核查人员";
     const illegalRoleReview = await reviewClueAction({
       clueId: clue.id,
       action: "APPROVE",
-      operatorRole: "线索核查人员",
+      operatorRole: "部门负责人",
     });
     assert.equal(illegalRoleReview.ok, false);
-    assert.ok(illegalRoleReview.error?.includes("权限拦截"));
+    assert.ok(illegalRoleReview.error?.includes("权限拦截：仅部门负责人允许执行复核审批"));
 
     // 在 PENDING_REVIEW 状态下再次尝试分派 -> 状态机守卫拦截
+    process.env.TEST_USER_ROLE = "综合管理人员";
     const illegalStateDispatch = await dispatchClueAction({
       clueId: clue.id,
       department: "专卖稽查一队",
       handler: "李四",
       deadline: today,
       needReview: true,
-      operatorRole: "综合管理人员",
     });
     assert.equal(illegalStateDispatch.ok, false);
     assert.ok(illegalStateDispatch.error?.includes("状态机守卫拦截"));

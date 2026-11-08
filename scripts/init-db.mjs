@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS user (
   email TEXT NOT NULL UNIQUE,
   email_verified INTEGER NOT NULL DEFAULT 0,
   image TEXT,
+  role TEXT NOT NULL DEFAULT '综合管理人员',
+  department TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -204,5 +206,13 @@ CREATE TABLE IF NOT EXISTS system_audit_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_trace ON system_audit_logs(trace_id);
 `);
+
+// 增量字段平滑迁移
+try {
+  exec("ALTER TABLE user ADD COLUMN role TEXT NOT NULL DEFAULT '综合管理人员';");
+} catch {}
+try {
+  exec("ALTER TABLE user ADD COLUMN department TEXT;");
+} catch {}
 
 console.log("✅ [init-db] SQLite 数据库表初始化完成！路径:", dbPath);

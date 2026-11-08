@@ -6,19 +6,57 @@ const sqlite = new Database(dbPath);
 
 console.log("🌱 开始播种专卖监管线索演示数据...");
 
-// 获取或创建管理员用户
-let user = sqlite.prepare("SELECT id FROM user WHERE email = 'admin@clue.local'").get();
-if (!user) {
-  const userId = "admin-demo-user";
-  sqlite
-    .prepare(
-      "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
-    )
-    .run(userId, "综合管理员", "admin@clue.local", 1, Date.now(), Date.now());
-  user = { id: userId };
+// 获取或创建标准演示账号
+const demoUsers = [
+  {
+    id: "admin-demo-user",
+    name: "张统筹（综合管理）",
+    email: "admin@clue.local",
+    role: "综合管理人员",
+    department: "综合办公室",
+  },
+  {
+    id: "inspector-demo-user",
+    name: "李稽查（核查办理）",
+    email: "inspector@clue.local",
+    role: "线索核查人员",
+    department: "专卖稽查大队",
+  },
+  {
+    id: "leader-demo-user",
+    name: "王科长（复核审批）",
+    email: "leader@clue.local",
+    role: "部门负责人",
+    department: "专卖稽查大队",
+  },
+  {
+    id: "guest-demo-user",
+    name: "陈观察（只读监督）",
+    email: "guest@clue.local",
+    role: "专卖监督管理人员",
+    department: "稽查督查室",
+  },
+];
+
+for (const u of demoUsers) {
+  const existing = sqlite.prepare("SELECT id FROM user WHERE id = ? OR email = ?").get(u.id, u.email);
+  if (!existing) {
+    sqlite
+      .prepare(
+        "INSERT INTO user (id, name, email, email_verified, role, department, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+      .run(u.id, u.name, u.email, 1, u.role, u.department, Date.now(), Date.now());
+  } else {
+    sqlite
+      .prepare(
+        "UPDATE user SET name = ?, email = ?, role = ?, department = ?, updated_at = ? WHERE id = ?"
+      )
+      .run(u.name, u.email, u.role, u.department, Date.now(), existing.id);
+  }
 }
 
-const userId = user.id;
+const adminUser = sqlite.prepare("SELECT id FROM user WHERE email = 'admin@clue.local'").get();
+const userId = adminUser ? adminUser.id : "admin-demo-user";
 
 // 清理旧的演示线索（保留非演示线索）
 const demoClueNos = [

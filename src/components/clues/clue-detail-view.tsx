@@ -79,7 +79,6 @@ export function ClueDetailView({ clue, timeline }: ClueDetailViewProps) {
     const res = await closeClueAction({
       clueId: clue.id,
       closeReason: closeReason.trim() || "核查处置完成，符合结案归档规范",
-      operatorRole: currentRole,
     });
     setIsClosing(false);
 

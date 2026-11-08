@@ -28,16 +28,17 @@ description: AI 辅助代码评审与交付门禁（Reviewer Agent）。对比�
 ### 🚨 阻断级清单 (Blockers) - 出现任一必须建议 REJECT 打回！
 
 - **[B-01 业务契约偏离]**
-  - 意向分计算是否严格遵循确定性算法并在 $[0, 100]$ 闭区间内截断？
-  - 线索生命周期状态跃迁是否合法（NEW -> FOLLOWING -> WON/LOST，不可逆流）？
-  - 接口返回值是否符合规范结构 `{ ok?: boolean; error?: string }`？
-- **[B-02 架构底线越权与租户未隔离]**
+  - 专卖监管线索生命周期状态跃迁是否合法？严格遵循：`PENDING_ASSIGN -> IN_PROGRESS -> PENDING_REVIEW -> COMPLETED -> CLOSED`，以及待复核驳回回退至办理中 `PENDING_REVIEW -> IN_PROGRESS`；严禁跳跃式非法流转。
+  - 接口返回值是否 100% 符合规范结构 `{ ok: boolean; error?: string; ... }`？
+- **[B-02 服务端权威 RBAC 与数据防卫（严禁信任客户端角色）]**
   - Server Action 入口是否显式调用 `const session = await requireSession()`？
-  - 数据库写查操作是否**强制显式绑定 `eq(table.userId, session.user.id)`**？严禁出现越权删除/查询无主数据！
-- **[B-03 外部输入未做防御校验]**
-  - 是否所有 FormData / 请求参数均先通过 Zod Schema 进行 `safeParse`？严禁未经校验直接入库！
+  - **严禁信任客户端传入的 `operatorRole`**！动作权限守卫与流水审计必须统一使用服务端可信的 `session.user.role`；
+  - 个人私有数据（如 todos）写查操作强制绑定 `eq(table.userId, session.user.id)`；政企协同共享大盘数据流转必须前置状态机守卫、角色准入与不可篡改时间轴留痕。
+- **[B-03 外部输入与文件全量 Zod 防卫]**
+  - 是否所有请求参数（包括单个参数、查询过滤、FormData 文件封装）100% 经过 Zod Schema 的 `safeParse` 严格校验？
+  - 文件上传入口必须校验封装格式、扩展名（仅限 `.xlsx`/`.xls`）、文件大小（<=10MB）及非空。严禁未经校验直接入库或读取！
 - **[B-04 敏感数据裸奔]**
-  - 客户手机号 `customerPhone` 在前端列表展示中必须经过 `maskMobile` 脱敏（`138****0000`），严禁明文外泄。
+  - 涉案当事人手机号在前端列表与审计日志展示中必须经过 `maskMobile` 脱敏（`138****0000`），严禁明文外泄。
   - 用户密码哈希或 Token 绝不能随响应返回给前端客户端。
 - **[B-05 SQL 注入风险]**
   - 是否 100% 采用 Drizzle ORM 查询构造器 API？严禁任何形式的字符串拼接 SQL！

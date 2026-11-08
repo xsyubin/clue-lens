@@ -42,7 +42,6 @@ export function ReviewDialog({
       clueId,
       action,
       comment: comment.trim() || undefined,
-      operatorRole: currentRole,
     });
 
     setIsSubmitting(false);

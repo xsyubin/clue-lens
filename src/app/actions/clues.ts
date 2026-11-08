@@ -7,6 +7,7 @@ import {
   monopolyClues,
   clueTimelineLogs,
   systemAuditLogs,
+  user,
   type MonopolyClue,
 } from "@/db/schema";
 import { requireSession } from "@/lib/session";
@@ -16,6 +17,11 @@ import {
   reviewClueSchema,
   closeClueSchema,
   filterCluesSchema,
+  generateAdvisorySchema,
+  exportCluesSchema,
+  getClueDetailSchema,
+  switchDemoRoleSchema,
+  importFileSchema,
 } from "@/lib/validations/clue";
 import { parseCluesExcel } from "@/lib/excel-parser";
 import { detectAnomalies, type AnomalyContext, type AnomalyTag } from "@/lib/anomaly-detector";
@@ -44,12 +50,34 @@ function safeRevalidatePath(path: string) {
 export async function importCluesAction(formData: FormData) {
   try {
     const session = await requireSession();
-    const file = formData.get("file") as File | null;
-    if (!file) {
+
+    // 服务端权威角色守卫：仅综合管理人员具备导入资格
+    if (session.user.role !== "综合管理人员" && session.user.role !== "系统管理员") {
+      return { ok: false, error: "权限拦截：仅综合管理人员允许执行台账导入" };
+    }
+
+    if (!(formData instanceof FormData)) {
+      return { ok: false, error: "非法请求封装：必须为 FormData" };
+    }
+
+    const file = formData.get("file");
+    if (!file || typeof file !== "object" || typeof (file as any).arrayBuffer !== "function") {
       return { ok: false, error: "请选择需要上传的 Excel 文件" };
     }
 
-    const arrayBuffer = await file.arrayBuffer();
+    const rawFile = file as File;
+    const fileValidation = importFileSchema.safeParse({
+      name: rawFile.name,
+      size: rawFile.size,
+    });
+    if (!fileValidation.success) {
+      return {
+        ok: false,
+        error: fileValidation.error.issues[0]?.message || "上传文件格式或大小不合规",
+      };
+    }
+
+    const arrayBuffer = await rawFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const parseResult = parseCluesExcel(buffer);
 
@@ -129,7 +157,7 @@ export async function importCluesAction(formData: FormData) {
             // 写入时间轴初始记录
             tx.insert(clueTimelineLogs).values({
               clueId: inserted.id,
-              operatorRole: "综合管理人员",
+              operatorRole: session.user.role,
               operatorName: session.user.name,
               action: "IMPORT",
               fromStatus: null,
@@ -144,11 +172,11 @@ export async function importCluesAction(formData: FormData) {
       // 记录安全审计日志
       tx.insert(systemAuditLogs).values({
         traceId: crypto.randomUUID(),
-        operatorRole: "综合管理人员",
+        operatorRole: session.user.role,
         operatorId: session.user.id,
         action: "IMPORT_CLUES_EXCEL",
         details: JSON.stringify({
-          filename: file.name,
+          filename: rawFile.name,
           total: totalRows,
           imported: count,
           skipped: skippedRows.length,
@@ -180,12 +208,18 @@ export async function importCluesAction(formData: FormData) {
 export async function dispatchClueAction(input: unknown) {
   try {
     const session = await requireSession();
+
+    // 权限守卫：仅综合管理人员允许分派
+    if (session.user.role !== "综合管理人员" && session.user.role !== "系统管理员") {
+      return { ok: false, error: "权限拦截：仅综合管理人员允许执行线索分派" };
+    }
+
     const parsed = dispatchClueSchema.safeParse(input);
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message || "入参校验失败" };
     }
 
-    const { clueId, department, handler, deadline, needReview, operatorRole } = parsed.data;
+    const { clueId, department, handler, deadline, needReview } = parsed.data;
 
     // 办理期限防卫校验：不得早于当前日期
     const today = new Date().toISOString().split("T")[0]!;
@@ -222,10 +256,10 @@ export async function dispatchClueAction(input: unknown) {
         .where(eq(monopolyClues.id, clueId))
         .run();
 
-      // 追加时间轴流水
+      // 追加时间轴流水（强制使用服务端权威角色与姓名，杜绝客户端伪造）
       tx.insert(clueTimelineLogs).values({
         clueId,
-        operatorRole,
+        operatorRole: session.user.role,
         operatorName: session.user.name,
         action: "DISPATCH",
         fromStatus: "PENDING_ASSIGN",
@@ -236,7 +270,7 @@ export async function dispatchClueAction(input: unknown) {
       // 追加安全审计日志
       tx.insert(systemAuditLogs).values({
         traceId: crypto.randomUUID(),
-        operatorRole,
+        operatorRole: session.user.role,
         operatorId: session.user.id,
         action: "CLUE_DISPATCH",
         targetId: clueId,
@@ -259,12 +293,18 @@ export async function dispatchClueAction(input: unknown) {
 export async function submitHandlingAction(input: unknown) {
   try {
     const session = await requireSession();
+
+    // 权限守卫：仅线索核查人员允许提交办结
+    if (session.user.role !== "线索核查人员" && session.user.role !== "系统管理员") {
+      return { ok: false, error: "权限拦截：仅线索核查人员允许提交办结结果" };
+    }
+
     const parsed = submitHandlingSchema.safeParse(input);
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message || "入参校验失败" };
     }
 
-    const { clueId, checkDate, checkResult, measures, operatorRole } = parsed.data;
+    const { clueId, checkDate, checkResult, measures } = parsed.data;
 
     return db.transaction((tx) => {
       // 状态机守卫：仅办理中允许提交办结
@@ -298,7 +338,7 @@ export async function submitHandlingAction(input: unknown) {
 
       tx.insert(clueTimelineLogs).values({
         clueId,
-        operatorRole,
+        operatorRole: session.user.role,
         operatorName: session.user.name,
         action: "SUBMIT",
         fromStatus: "IN_PROGRESS",
@@ -308,7 +348,7 @@ export async function submitHandlingAction(input: unknown) {
 
       tx.insert(systemAuditLogs).values({
         traceId: crypto.randomUUID(),
-        operatorRole,
+        operatorRole: session.user.role,
         operatorId: session.user.id,
         action: "CLUE_SUBMIT_HANDLING",
         targetId: clueId,
@@ -331,17 +371,18 @@ export async function submitHandlingAction(input: unknown) {
 export async function reviewClueAction(input: unknown) {
   try {
     const session = await requireSession();
+
+    // 权限守卫：仅部门负责人具备复核资格，从服务端可信 Session 获取
+    if (session.user.role !== "部门负责人" && session.user.role !== "系统管理员") {
+      return { ok: false, error: "权限拦截：仅部门负责人允许执行复核审批" };
+    }
+
     const parsed = reviewClueSchema.safeParse(input);
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message || "入参校验失败" };
     }
 
-    const { clueId, action, comment, operatorRole } = parsed.data;
-
-    // 权限守卫：仅部门负责人具备复核资格
-    if (operatorRole !== "部门负责人") {
-      return { ok: false, error: "权限拦截：仅部门负责人允许执行复核审批" };
-    }
+    const { clueId, action, comment } = parsed.data;
 
     return db.transaction((tx) => {
       // 状态机守卫：仅待复核允许审核
@@ -374,7 +415,7 @@ export async function reviewClueAction(input: unknown) {
 
       tx.insert(clueTimelineLogs).values({
         clueId,
-        operatorRole,
+        operatorRole: session.user.role,
         operatorName: session.user.name,
         action: actionName,
         fromStatus: "PENDING_REVIEW",
@@ -384,7 +425,7 @@ export async function reviewClueAction(input: unknown) {
 
       tx.insert(systemAuditLogs).values({
         traceId: crypto.randomUUID(),
-        operatorRole,
+        operatorRole: session.user.role,
         operatorId: session.user.id,
         action: `CLUE_${actionName}`,
         targetId: clueId,
@@ -407,15 +448,18 @@ export async function reviewClueAction(input: unknown) {
 export async function closeClueAction(input: unknown) {
   try {
     const session = await requireSession();
+
+    // 权限守卫：仅部门负责人具备终审归档资格，从服务端可信 Session 判定
+    if (session.user.role !== "部门负责人" && session.user.role !== "系统管理员") {
+      return { ok: false, error: "权限拦截：仅部门负责人允许执行终审归档" };
+    }
+
     const parsed = closeClueSchema.safeParse(input);
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues[0]?.message || "入参校验失败" };
     }
 
-    const { clueId, closeReason, operatorRole } = parsed.data;
-    if (operatorRole !== "部门负责人") {
-      return { ok: false, error: "权限拦截：仅部门负责人允许执行终审归档" };
-    }
+    const { clueId, closeReason } = parsed.data;
 
     return db.transaction((tx) => {
       const existing = tx
@@ -443,7 +487,7 @@ export async function closeClueAction(input: unknown) {
 
       tx.insert(clueTimelineLogs).values({
         clueId,
-        operatorRole,
+        operatorRole: session.user.role,
         operatorName: session.user.name,
         action: "CLOSE",
         fromStatus: "COMPLETED",
@@ -453,7 +497,7 @@ export async function closeClueAction(input: unknown) {
 
       tx.insert(systemAuditLogs).values({
         traceId: crypto.randomUUID(),
-        operatorRole,
+        operatorRole: session.user.role,
         operatorId: session.user.id,
         action: "CLUE_CLOSE",
         targetId: clueId,
@@ -471,11 +515,19 @@ export async function closeClueAction(input: unknown) {
 }
 
 /**
- * 6. 生成辅助处置建议 Action
+ * 6. 生成辅助处置建议 Action (支持对象参数或旧版多参数，强制 Zod 安全解析)
  */
-export async function generateAdvisoryAction(clueId: string, useAi?: boolean) {
+export async function generateAdvisoryAction(input: unknown, legacyUseAi?: boolean) {
   try {
     await requireSession();
+    const raw =
+      typeof input === "string" ? { clueId: input, useAi: legacyUseAi } : input;
+    const parsed = generateAdvisorySchema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "入参校验失败" };
+    }
+
+    const { clueId, useAi } = parsed.data;
     const [clue] = await db
       .select()
       .from(monopolyClues)
@@ -600,11 +652,18 @@ export async function getDashboardDataAction(filterInput?: unknown) {
 }
 
 /**
- * 8. 查询单个线索详情与时间轴
+ * 8. 查询单个线索详情与时间轴 (强制 Zod 入参安全解析)
  */
-export async function getClueDetailAction(clueId: string) {
+export async function getClueDetailAction(input: unknown) {
   try {
     await requireSession();
+    const raw = typeof input === "string" ? { clueId: input } : input;
+    const parsed = getClueDetailSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "入参校验失败" };
+    }
+
+    const { clueId } = parsed.data;
     const [clue] = await db
       .select()
       .from(monopolyClues)
@@ -627,11 +686,21 @@ export async function getClueDetailAction(clueId: string) {
 }
 
 /**
- * 9. 导出分析报告或台账 Action
+ * 9. 导出分析报告或台账 Action (强制 Zod 入参安全解析)
  */
-export async function exportCluesAction(format: "XLSX" | "MARKDOWN", filterInput?: unknown) {
+export async function exportCluesAction(input: unknown, legacyFilter?: unknown) {
   try {
     await requireSession();
+    const raw =
+      typeof input === "string"
+        ? { format: input, filterInput: legacyFilter }
+        : input;
+    const parsed = exportCluesSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "导出入参校验失败" };
+    }
+
+    const { format, filterInput } = parsed.data;
     const res = await getDashboardDataAction(filterInput);
     if (!res.ok || !res.clues || !res.stats) {
       return { ok: false, error: "无可导出的数据" };
@@ -669,6 +738,45 @@ export async function exportCluesAction(format: "XLSX" | "MARKDOWN", filterInput
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "导出失败";
+    return { ok: false, error: msg };
+  }
+}
+
+/**
+ * 10. 演示模式服务端角色切换 Action
+ * 在受控环境（开发/演示）下真实切换当前登录用户在数据库中的权威角色，杜绝客户端通过请求参数伪造权限
+ */
+export async function switchDemoRoleAction(input: unknown) {
+  try {
+    const session = await requireSession();
+    const parsed = switchDemoRoleSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "目标角色不合法" };
+    }
+
+    const { role } = parsed.data;
+
+    // 权威更新数据库中的角色字段
+    db.update(user)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(user.id, session.user.id))
+      .run();
+
+    // 记录安全审计日志
+    db.insert(systemAuditLogs).values({
+      traceId: crypto.randomUUID(),
+      operatorRole: role,
+      operatorId: session.user.id,
+      action: "USER_SWITCH_DEMO_ROLE",
+      details: JSON.stringify({ previousRole: session.user.role, targetRole: role }),
+    }).run();
+
+    safeRevalidatePath("/");
+    safeRevalidatePath("/clues");
+
+    return { ok: true, role };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "切换角色失败";
     return { ok: false, error: msg };
   }
 }

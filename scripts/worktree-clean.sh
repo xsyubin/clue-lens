@@ -22,7 +22,7 @@ usage() {
 用法：scripts/worktree-clean.sh --name NAME [选项]
 
 选项：
-  --name NAME     必填，只允许清理 ticket-lite-NAME
+  --name NAME     必填，只允许清理 clue-lens-NAME
   --parent DIR    worktree 父目录，默认仓库同级 .worktrees
   --force         即使 worktree 有未提交改动也移除（需谨慎）
   --dry-run       只打印将要执行的命令，不移除任何内容
@@ -49,7 +49,7 @@ fi
 if [[ -d "${PARENT}" ]]; then
   PARENT="$(cd "${PARENT}" && pwd -P)"
 fi
-WORKTREE="${PARENT%/}/ticket-lite-${NAME}"
+WORKTREE="${PARENT%/}/clue-lens-${NAME}"
 if [[ "${WORKTREE}" != "${PARENT%/}"/* || "${WORKTREE}" == "${PARENT%/}" ]]; then
   echo "[WORKTREE] 目标路径校验失败，拒绝执行。" >&2
   exit 3

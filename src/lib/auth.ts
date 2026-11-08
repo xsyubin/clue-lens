@@ -9,6 +9,21 @@ export const auth = betterAuth({
     provider: "sqlite",
     schema,
   }),
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "综合管理人员",
+        input: false,
+      },
+      department: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,

@@ -64,7 +64,7 @@ description: 按已确认的 requirements.md、design.md 和 tasks.md 实现 OA�
 ### 第 3 步：按设计编码
 
 - 严格使用 `design.md` 中确定的源代码路径和职责。
-- 前端新建业务页面必须遵循项目 `pnpm gen:page` 要求；Java/Maven 后端实现遵循仓库 `AGENTS.md` 和相关 `rules/`。
+- 前端新建业务页面遵循项目架构规范；Java/Maven 后端实现遵循仓库 `AGENTS.md` 和相关 `rules/`。
 - 后端 Service 层 CRUD 的实现方式**统一裁决**，同类场景不得混用多种写法，`design.md` 未指定实现方式时按以下规则执行，不自行选择：
   - 单表增删改查、条件查询、分页：一律使用 MyBatis-Plus 基类方法 + `lambdaQuery` 链式条件（`this.save` / `this.updateById` / `this.removeById` / `this.getById` / `this.lambdaQuery()...one()/.list()/.page(Pages.formReqDto(...))`），**不得**为此新增 Mapper 方法或手写 SQL。
   - 方法结构、Converter 转换、`StringUtils.isNotBlank` 条件判空等写法，以 `ticket-biz/src/main/java/com/ticket/biz/service/TicketDispatchServiceImpl.java` 为标准样例，保持一致。
@@ -90,17 +90,17 @@ description: 按已确认的 requirements.md、design.md 和 tasks.md 实现 OA�
 
 全部目标任务实现后，自动执行当前仓库提供的标准命令。
 
-根据仓库类型选择标准验证命令。前端仓库默认执行：
+根据仓库类型选择标准验证命令。本项目（TypeScript/Next.js）默认执行：
 
 ```bash
-pnpm check
-pnpm test:unit
+npm run typecheck
+npm test
 ```
 
 涉及构建配置、路由、依赖、跨模块改动或较大范围修改时，再执行：
 
 ```bash
-pnpm build
+npm run build
 ```
 
 #### 核心 GWT 端到端场景化测试门禁（强制执行）
@@ -121,7 +121,7 @@ mvn package -pl <module> -am -DskipTests
 
 涉及数据库、事务、AOP 或跨模块集成时，补充项目已有的集成测试或验证命令。不要执行与当前任务无关的前端命令。
 
-涉及关键页面交互且已有对应 Playwright 用例时，执行相关 `pnpm test:smoke` 用例。不要无条件运行与本次功能无关的全部浏览器测试。
+涉及关键页面交互且已有对应自动化用例时，执行相关测试用例。不要无条件运行与本次功能无关的全部测试。
 
 若在其他仓库实现后端任务，优先从该仓库的构建文件、任务脚本和 CI 配置中确定标准测试与构建命令，不凭空猜测命令。
 
@@ -146,7 +146,7 @@ mvn package -pl <module> -am -DskipTests
 - 目标模块不存在仍会参与运行时行为的 Mock 数据、接口桩、Mock 路由、Mock 开关或假数据回退；测试 fixture 不受此条限制。
 - `tasks.md` 中所有包含 GWT 验收场景的任务已通过自动化测试或集成用例验证并全部通过。
 - 目标任务在 `tasks.md` 中有真实完成状态。
-- 前端仓库的 `pnpm check`、相关单元测试、GWT 端到端测试和必要的 `pnpm build` 通过，或 Java/Maven 后端仓库中已确定的对应检查、测试和构建命令通过。
+- 前端仓库的 `npm run typecheck`、相关单元测试、GWT 自动化测试和必要的 `npm run build` 通过，或 Java/Maven 后端仓库中已确定的对应检查、测试和构建命令通过。
 - 没有通过测试或验证时，不宣称实现完成。
 
 ## 输出

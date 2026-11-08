@@ -5,3 +5,6 @@ scripts/static-security-check.sh
 scripts/secret-scan.sh
 scripts/check-mcp.sh
 scripts/validate-agent-manifest.sh
+scripts/check-type.sh
+scripts/run-tests.sh
+scripts/run-build.sh

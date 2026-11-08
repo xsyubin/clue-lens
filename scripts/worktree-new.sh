@@ -53,7 +53,7 @@ fi
 if [[ -d "${PARENT}" ]]; then
   PARENT="$(cd "${PARENT}" && pwd -P)"
 fi
-WORKTREE="${PARENT%/}/ticket-lite-${NAME}"
+WORKTREE="${PARENT%/}/clue-lens-${NAME}"
 BRANCH="ai/${NAME}"
 
 if [[ -e "${WORKTREE}" ]]; then
@@ -78,4 +78,16 @@ fi
 
 mkdir -p "${PARENT}"
 git worktree add -b "${BRANCH}" "${WORKTREE}" "${BASE}"
-echo "[WORKTREE] 创建成功。进入该目录后再执行 scripts/init-hooks.sh。"
+
+# 自动为隔离工作区准备私有沙盒环境（独立配置与独立 SQLite 数据库，彻底杜绝并发锁库）
+if [[ -f "${ROOT}/.env.example" && ! -f "${WORKTREE}/.env" ]]; then
+  secret="$(node -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))')"
+  sed -e "s/change-me-to-a-random-string/${secret}/" \
+      -e "s|./data/app.db|./data/app-${NAME}.db|" \
+      "${ROOT}/.env.example" > "${WORKTREE}/.env"
+  mkdir -p "${WORKTREE}/data"
+  echo "[WORKTREE] 已为隔离沙盒生成独立 .env (数据库: ./data/app-${NAME}.db)"
+fi
+
+echo "[WORKTREE] 创建成功：${WORKTREE}"
+echo "[WORKTREE] 独立分支：${BRANCH}，进入该目录即可独立开发与测试，与主工作区零冲突！"

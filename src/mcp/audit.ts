@@ -32,11 +32,9 @@ export function recordMcpAudit(entry: McpAuditEntry): void {
 
     let dbInstance: any;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Database = require("better-sqlite3");
       dbInstance = new Database(dbPath);
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { DatabaseSync } = require("node:sqlite");
       dbInstance = new DatabaseSync(dbPath);
     }

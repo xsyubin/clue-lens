@@ -72,7 +72,7 @@ export const dispatchClueSchema = z.object({
   handler: z.string().min(1, "责任人必填"),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "办理期限格式必须为 YYYY-MM-DD"),
   needReview: z.boolean().default(false),
-  operatorRole: z.enum(OPERATOR_ROLES).default("综合管理人员"),
+  operatorRole: z.enum(OPERATOR_ROLES).optional(),
 });
 
 export type DispatchClueDTO = z.infer<typeof dispatchClueSchema>;
@@ -85,7 +85,7 @@ export const submitHandlingSchema = z.object({
   checkDate: z.string().min(1, "核查日期必填"),
   checkResult: z.string().min(1, "核查结论必填"),
   measures: z.string().min(1, "处置措施必填"),
-  operatorRole: z.enum(OPERATOR_ROLES).default("线索核查人员"),
+  operatorRole: z.enum(OPERATOR_ROLES).optional(),
 });
 
 export type SubmitHandlingDTO = z.infer<typeof submitHandlingSchema>;
@@ -99,7 +99,7 @@ export const reviewClueSchema = z.object({
     error: "复核动作必须为 APPROVE 或 REJECT",
   }),
   comment: z.string().optional().nullable(),
-  operatorRole: z.enum(OPERATOR_ROLES).default("部门负责人"),
+  operatorRole: z.enum(OPERATOR_ROLES).optional(),
 }).refine(
   (data) => {
     if (data.action === "REJECT") {
@@ -121,10 +121,62 @@ export type ReviewClueDTO = z.infer<typeof reviewClueSchema>;
 export const closeClueSchema = z.object({
   clueId: z.string().uuid("非法线索 ID"),
   closeReason: z.string().optional().nullable(),
-  operatorRole: z.enum(OPERATOR_ROLES).default("部门负责人"),
+  operatorRole: z.enum(OPERATOR_ROLES).optional(),
 });
 
 export type CloseClueDTO = z.infer<typeof closeClueSchema>;
+
+/**
+ * 辅助处置建议参数契约
+ */
+export const generateAdvisorySchema = z.object({
+  clueId: z.string().uuid("非法线索 ID"),
+  useAi: z.boolean().optional(),
+});
+
+export type GenerateAdvisoryDTO = z.infer<typeof generateAdvisorySchema>;
+
+/**
+ * 导出参数契约
+ */
+export const exportCluesSchema = z.object({
+  format: z.enum(["XLSX", "MARKDOWN"], {
+    error: "导出格式仅支持 XLSX 或 MARKDOWN",
+  }),
+  filterInput: z.unknown().optional(),
+});
+
+export type ExportCluesDTO = z.infer<typeof exportCluesSchema>;
+
+/**
+ * 单条线索详情查询契约
+ */
+export const getClueDetailSchema = z.object({
+  clueId: z.string().uuid("非法线索 ID"),
+});
+
+export type GetClueDetailDTO = z.infer<typeof getClueDetailSchema>;
+
+/**
+ * 演示模式切换角色契约
+ */
+export const switchDemoRoleSchema = z.object({
+  role: z.enum(OPERATOR_ROLES, {
+    error: "不支持的目标角色",
+  }),
+});
+
+export type SwitchDemoRoleDTO = z.infer<typeof switchDemoRoleSchema>;
+
+/**
+ * 文件上传元数据契约
+ */
+export const importFileSchema = z.object({
+  name: z.string().regex(/\.(xlsx|xls)$/i, "仅支持上传 .xlsx 或 .xls 格式的 Excel 文件"),
+  size: z.number().gt(0, "上传文件不可为空").lte(10 * 1024 * 1024, "文件大小不能超过 10MB"),
+});
+
+export type ImportFileDTO = z.infer<typeof importFileSchema>;
 
 /**
  * 多维组合查询筛选契约

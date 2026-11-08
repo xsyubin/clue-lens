@@ -9,6 +9,8 @@ export const user = sqliteTable("user", {
     .notNull()
     .default(false),
   image: text("image"),
+  role: text("role").notNull().default("综合管理人员"),
+  department: text("department"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });

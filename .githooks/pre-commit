@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
-# Git pre-commit hook: 触发确定性前置审查
-set -e
+# Git pre-commit hook: 触发敏感凭证防卫与确定性前置审查
+set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${ROOT}"
+
+# 1. 拦截敏感配置文件与私钥物理文件提交入库
+staged_files="$(git diff --cached --name-only)"
+if [[ -n "${staged_files}" ]]; then
+    if printf '%s\n' "${staged_files}" | grep -Eiq '(^|/)\.env($|\.)|id_rsa|\.pem$|\.p12$|\.jks$'; then
+        echo "❌ [GIT-BLOCK] 凭证防护拦截：严禁将真实 .env 配置文件或证书私钥提交入库！请使用 .env.example。" >&2
+        exit 2
+    fi
+fi
+
+# 2. 运行确定性前置审查 (自动驱动 secret-scan、类型检查、单测集成与生产构建打包)
 ./scripts/deterministic-review.sh --staged

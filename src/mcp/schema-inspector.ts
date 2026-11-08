@@ -270,7 +270,6 @@ function getDatabaseConnection() {
 
   try {
     // 优先尝试 better-sqlite3
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Database = require("better-sqlite3");
     const db = new Database(dbPath, { readonly: true });
     return {
@@ -279,7 +278,6 @@ function getDatabaseConnection() {
     };
   } catch {
     // 兼容 Node 22+ 原生 node:sqlite
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { DatabaseSync } = require("node:sqlite");
     const db = new DatabaseSync(dbPath, { open: true, readOnly: true });
     return {

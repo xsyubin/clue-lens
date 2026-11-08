@@ -66,7 +66,6 @@ export function DispatchDialog({
       handler,
       deadline,
       needReview,
-      operatorRole: currentRole,
     });
 
     setIsSubmitting(false);
