@@ -4,6 +4,17 @@ model_reasoning_effort = "medium"
 enabled = true
 max_threads = 4     # 并行上限
 max_depth = 1       # 子代理不再嵌套
-max_concurrent_threads_per_session = 8
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
+
+[agents.docs_researcher]
+description = "Documentation specialist"
+config_file = "agents/docs-researcher.toml"
+
+[agents.pr_explorer]
+description = "Read-only codebase explorer"
+config_file = "agents/pr-explorer.toml"
+
+[agents.reviewer]
+description = "PR reviewer focused on correctness and security"
+config_file = "agents/reviewer.toml"
