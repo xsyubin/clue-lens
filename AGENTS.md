@@ -15,7 +15,7 @@
   4. **原生模块与运行时架构约束:** `better-sqlite3` 是原生 C++ 模块，`next.config.ts` 必须显式声明 `serverExternalPackages: ["better-sqlite3"]`。SQLite 连接必须在开发模式下缓存至 `globalThis` 以避免 HMR 热更新泄漏句柄。
   5. **敏感信息脱敏与安全底线:** 涉案当事人手机号等敏感信息在前端列表展示或非审计日志打印中必须统一调用 `maskMobile` 进行掩码脱敏（如 `138****0000`）。严禁向客户端泄露密码哈希、Secret 密钥或会话凭据。
   6. **MCP 探查与审计安全红线:** MCP 工具 `inspect_db_schema` 仅允许探查表结构元数据（DDL、列定义、外键、索引），严禁读取真实业务敏感数据；`GUEST` 角色禁止访问任何诊断工具；`ops_user_credential` 属于高危涉密黑名单，触发访问必须坚决阻断并告警。
-  7. **多智能体并发与物理隔离红线:** 当涉及多 Agent 并发任务、或人类开发者同时在本地编码调试时，严禁直接在主工作区根目录修改业务源码；必须通过 `scripts/agent/agent-run.sh` 或调用 subagent 时显式配置 `Workspace: "share"` 创建独立 Git Worktree，并绑定私有沙盒数据库（`data/app-<name>.db`），从物理层面彻底消除文件互相覆盖、Git index 锁死与 SQLite 数据库锁死。
+  7. **代码修改与 Worktree 物理隔离红线:** 任何要提交的代码改动、特性开发或架构改造，严禁直接在主工作区 `main` 分支上动手；必须通过 `./scripts/agent-worktree.sh new <slug>`（或并发批量时使用 `agent-run.sh` / Subagent `Workspace: "share"`）在独立 Git Worktree + 新分支中进行。测试全绿后通过 `./scripts/agent-worktree.sh merge <slug>` 快进合并，从物理层面彻底消除文件互相覆盖、Git index 锁死与 SQLite 数据库锁死（详见 [rules/08-worktree-workflow.md](rules/08-worktree-workflow.md)）。
 
 > [!NOTE]
 > 系统的分层调用时序、数据库 ER 关系与物理字段字典、部署拓扑及前端设计系统，以 [ARCHITECTURE.md](ARCHITECTURE.md) 为唯一事实源（SSOT）；本总纲侧重规则索引、安全军规与工程门禁。
@@ -33,6 +33,7 @@
 | [rules/05-coding-style.md](rules/05-coding-style.md) | TypeScript/React 19 编码风格、命名规范与目录约定 | `src/**/*.ts`, `src/**/*.tsx` | **[必读]** |
 | [rules/06-test-and-quality-convention.md](rules/06-test-and-quality-convention.md) | 确定性代码质量、类型检查门禁与测试规范 | `**/*.test.ts`, `scripts/**/*.sh` | **[必读]** |
 | [rules/07-security-and-auth.md](rules/07-security-and-auth.md) | Better Auth 配置、Session 处理、CSRF/Cookie 防护与敏感脱敏 | `src/lib/auth*.ts`, `src/lib/session.ts` | **[必读]** |
+| [rules/08-worktree-workflow.md](rules/08-worktree-workflow.md) | 代码修改与改造硬约束、Worktree 生命周期、依赖软链与快进合并 | `**/*` | **[必读]** |
 | [spec/clue-lens/requirements.md](spec/clue-lens/requirements.md) | 业务规格书：专卖监管线索全生命周期状态流转、异常规则与契约 | `src/**/*.ts`, `spec/**/*.md` | **[必读]** |
 
 ### SDD 规格中心 (spec/)

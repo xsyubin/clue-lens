@@ -9,7 +9,7 @@
     "setup": "node scripts/ops/setup.mjs && npm run db:migrate",
     "dev": "next dev",
     "seed": "node scripts/ops/seed-demo.mjs",
-    "test": "tsx --test src/tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 src/tests/*.test.ts",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
