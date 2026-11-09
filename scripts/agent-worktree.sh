@@ -128,7 +128,7 @@ case "$cmd" in
     # 5. 快进合并并清理
     echo "🚀 [WORKTREE] 正在快进合并到 main ..."
     git -C "$MAIN_ROOT" merge --ff-only "$BRANCH"
-    git -C "$MAIN_ROOT" worktree remove "$WT"
+    git -C "$MAIN_ROOT" worktree remove --force "$WT" 2>/dev/null || rm -rf "$WT"
     git -C "$MAIN_ROOT" branch -d "$BRANCH"
     echo "✅ [WORKTREE] 已成功快进合并到 main，并清理了工作树与分支 ${BRANCH}！"
     ;;
