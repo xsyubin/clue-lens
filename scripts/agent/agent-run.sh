@@ -92,7 +92,7 @@ fi
 mkdir -p "$PARENT"
 PARENT="$(cd "$PARENT" && pwd -P)"
 WORKTREE="$PARENT/clue-lens-$NAME"
-"$ROOT/scripts/agent/worktree-new.sh" --name "$NAME" --base "$BASE" --parent "$PARENT"
+WORKTREE_PARENT="$PARENT" "$ROOT/scripts/agent/worktree.sh" new "$NAME"
 
 guard_command() {
     local cmd="$1"
@@ -289,7 +289,7 @@ EVIDENCE_FILE="${EVIDENCE_DIR}/${ROLE}.md"
 echo "📜 [AGENT-RUN] 审计凭证已生成: ${EVIDENCE_FILE}"
 
 if [[ "$CLEANUP" -eq 1 ]]; then
-    "$ROOT/scripts/agent/worktree-clean.sh" --name "$NAME" --parent "$PARENT"
+    WORKTREE_PARENT="$PARENT" "$ROOT/scripts/agent/worktree.sh" drop "$NAME"
 else
     echo "[AGENT-RUN] 运行完成，worktree 保留：$WORKTREE"
 fi

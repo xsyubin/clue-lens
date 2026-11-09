@@ -48,7 +48,7 @@ roles:
     commands: ["./scripts/gates/check-secrets.sh", "./scripts/gates/check-mcp.sh", "./scripts/review.sh"]
 
 execution:
-  isolation: "每个角色使用 scripts/agent/worktree-new.sh 创建独立 worktree"
+  isolation: "每个角色使用 scripts/agent/worktree.sh new <slug> 创建独立 worktree"
   parallel_safe: ["spec-analyst + quality-reviewer（只读代码时）"]
   serial_required: ["spec-analyst -> fullstack-implementer -> quality-reviewer"]
   merge_policy: "只合并通过质量审查且具备 evidence/agent-runs/<run-id> 记录的分支"
