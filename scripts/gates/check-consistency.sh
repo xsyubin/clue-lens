@@ -116,7 +116,6 @@ check_file_exists ".agents/skills/spec-review/SKILL.md"
 check_file_exists "scripts/gates/check-manifest.sh"
 check_file_exists "scripts/agent/agent-run.sh"
 check_file_exists "scripts/agent/worktree.sh"
-check_file_exists "scripts/agent-worktree.sh"
 
 echo "=================================================================="
 if [ "${FAILURES}" -gt 0 ]; then
