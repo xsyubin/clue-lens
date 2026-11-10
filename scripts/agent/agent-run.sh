@@ -96,20 +96,11 @@ WORKTREE_PARENT="$PARENT" "$ROOT/scripts/agent/worktree.sh" new "$NAME"
 
 guard_command() {
     local cmd="$1"
-    # 1. 架构底线护栏：严禁越界修改核心模块排除配置与数据库基础连接
-    if printf '%s' "$cmd" | grep -Eiq 'next\.config\.ts.*better-sqlite3|drizzle\.config\.ts'; then
-        echo "[GUARD-BLOCK] 架构护栏拦截：严禁越界修改核心模块排除配置与数据库基础连接！" >&2
-        return 1
-    fi
-    # 2. 凭证与私钥安全护栏：禁止在命令中直接读取敏感凭据
-    if printf '%s' "$cmd" | grep -Eiq '(^|["/])\.env(\.|["/]|$)|id_rsa|\.pem|\.p12|\.jks|BETTER_AUTH_SECRET|secret[_-]?key|api[_-]?key'; then
-        echo "[GUARD-BLOCK] 凭据护栏拦截：禁止在 Agent 命令行中读取敏感凭据或私钥文件！" >&2
-        return 1
-    fi
-    # 3. 数据外传与越权护栏：禁止在 Agent 运行期执行数据外传或远程推送
-    if printf '%s' "$cmd" | grep -Eiq 'curl[^\n]*(--data|--upload-file|-T)|wget[^\n]*https?://|nc[[:space:]]|scp[[:space:]]|git[[:space:]]+push'; then
-        echo "[GUARD-BLOCK] 传输护栏拦截：禁止在 Agent 运行期执行潜在数据外传或远程写入命令！" >&2
-        return 1
+    # 统一复用公共前置安全守卫脚本 (pre-tool-guard.sh)
+    if [ -x "$ROOT/scripts/agent/pre-tool-guard.sh" ]; then
+        if ! "$ROOT/scripts/agent/pre-tool-guard.sh" "$cmd"; then
+            return 1
+        fi
     fi
     return 0
 }

@@ -1,14 +1,10 @@
 {
-    "credential-guard": {
-    "PreToolUse": [
-        {
-        "matcher": "read_file|run_command",
-        "hooks": [
-            {
-            "command": "./scripts/agent/pre-tool-guard.sh"
-            }
-        ]
-        }
-    ]
-    }
+	"credential-guard": {
+		"PreToolUse": [{
+			"matcher": "read_file|run_command",
+			"hooks": [{
+				"command": "../scripts/agent/pre-tool-guard.sh"
+			}]
+		}]
+	}
 }
