@@ -16,8 +16,8 @@ for script in \
   "${DEMO_DIR}/02-sdd-clarification.sh" \
   "${DEMO_DIR}/03-pre-tool-guard.sh" \
   "${DEMO_DIR}/04-worktree-isolation.sh" \
-  "${DEMO_DIR}/05-mcp-inspection.sh" \
-  "${DEMO_DIR}/06-quality-gate.sh"
+  "${DEMO_DIR}/05-quality-gate.sh" \
+  "${DEMO_DIR}/06-mcp-inspection.sh"
 do
   bash "$script"
   echo ""

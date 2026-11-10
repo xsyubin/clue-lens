@@ -17,8 +17,8 @@ show_menu() {
   echo -e "  ${BOLD}${YELLOW}[2]${RESET} 场景二：【意图契约】讨好型脑补 vs SDD 规格反向排雷与 GWT"
   echo -e "  ${BOLD}${YELLOW}[3]${RESET} 场景三：【运行期安全】提示词软叮嘱失窃 vs Pre-tool Hook 毫秒掐断"
   echo -e "  ${BOLD}${YELLOW}[4]${RESET} 场景四：【环境隔离】main 分支踩踏死锁 vs Worktree 物理沙盒"
-  echo -e "  ${BOLD}${YELLOW}[5]${RESET} 场景五：【企业集成】数据库字段幻觉 vs 受控 MCP + RBAC 越权拦截"
-  echo -e "  ${BOLD}${YELLOW}[6]${RESET} 场景六：【门禁定界】假单测闭眼合并 vs 确定性静态安全亮红阻断"
+  echo -e "  ${BOLD}${YELLOW}[5]${RESET} 场景五：【门禁定界】假单测闭眼合并 vs 确定性静态安全亮红阻断"
+  echo -e "  ${BOLD}${YELLOW}[6]${RESET} 场景六：【企业集成】数据库字段幻觉 vs 受控 MCP + RBAC 越权拦截"
   echo ""
   echo -e "  ----------------------------------------------------------------------"
   echo -e "  ${BOLD}${GREEN}[A]${RESET} 一键贯穿巡礼 (Run All 6 Scenarios)"
@@ -48,11 +48,11 @@ while true; do
       demo_pause
       ;;
     5)
-      bash "${DEMO_DIR}/05-mcp-inspection.sh"
+      bash "${DEMO_DIR}/05-quality-gate.sh"
       demo_pause
       ;;
     6)
-      bash "${DEMO_DIR}/06-quality-gate.sh"
+      bash "${DEMO_DIR}/06-mcp-inspection.sh"
       demo_pause
       ;;
     [aA])
