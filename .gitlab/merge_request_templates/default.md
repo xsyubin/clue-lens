@@ -13,7 +13,7 @@
 - [ ] AI 完全自动生成（需附带 Subagent 运行日志与人工复核范围）
 
 ## 3. 门禁验证证据 (Evidence Checklist)
-- [ ] **确定性机器全量前置审查**：`npm run review` 或 `./scripts/review.sh --staged`
+- [ ] **确定性机器全量前置审查**：`npm run review` 或 `npm run review -- --staged`
   - 静态安全门禁 (`scripts/gates/check-security.mjs`)：[ ] PASS
   - 架构与命名一致性 (`scripts/gates/check-consistency.mjs`)：[ ] PASS
   - 敏感凭据扫描 (`scripts/gates/check-secrets.mjs`)：[ ] PASS

@@ -177,25 +177,17 @@ switch (cmd) {
     // 4. 执行确定性前置审查
     console.log("🔍 [WORKTREE] 正在执行合并前确定性审查门禁...");
     const reviewScript = path.join(wtDir, "scripts", "review.mjs");
-    let reviewPass = false;
-    if (fs.existsSync(reviewScript)) {
-      const reviewRes = spawnSync(process.execPath, [reviewScript], {
-        cwd: wtDir,
-        stdio: "inherit",
-        env: process.env,
-      });
-      reviewPass = reviewRes.status === 0;
-    } else {
-      const shReview = path.join(wtDir, "scripts", "review.sh");
-      const reviewRes = spawnSync(shReview, [], {
-        cwd: wtDir,
-        stdio: "inherit",
-        env: process.env,
-      });
-      reviewPass = reviewRes.status === 0;
+    if (!fs.existsSync(reviewScript)) {
+      console.error(`❌ [WORKTREE] 未找到确定性审查入口: ${reviewScript}`);
+      process.exit(1);
     }
+    const reviewRes = spawnSync(process.execPath, [reviewScript], {
+      cwd: wtDir,
+      stdio: "inherit",
+      env: process.env,
+    });
 
-    if (!reviewPass) {
+    if (reviewRes.status !== 0) {
       console.error(`❌ [WORKTREE] 审查门禁未通过，已阻断合并！请在 ${wtDir} 中排查修复。`);
       process.exit(1);
     }

@@ -31,7 +31,7 @@ description: 按已确认的 requirements.md、design.md 和 tasks.md 实现 OA�
 
 **并发与工作区隔离约束（防打架铁律）**：
 - **单工作区默认顺序执行**：在当前单一工作区目录下，必须严格按照 `tasks.md` 的依赖 DAG **单代理顺序推进任务**。严禁在同一物理工作区中启动多个 Subagent 并发修改文件，避免代码相互覆盖与竞争死锁。
-- **多 Subagent 并发的前置条件**：若需开启多代理并行开发，必须基于 `.agents/agent-manifest.yml` 约定，强制使用 `scripts/agent/worktree.sh new <slug>` 在独立工作树目录下创建分支。仅限标记为 `(P)` 且 `_Boundary:_` 互斥隔离的任务可派发并行，最终通过 Git 分支合并，严禁共享物理目录直接踩踏。
+- **多 Subagent 并发的前置条件**：若需开启多代理并行开发，必须基于 `.agents/agent-manifest.yml` 约定，强制使用 `node scripts/agent/worktree.mjs new <slug>` 在独立工作树目录下创建分支。仅限标记为 `(P)` 且 `_Boundary:_` 互斥隔离的任务可派发并行，最终通过 Git 分支合并，严禁共享物理目录直接踩踏。
 
 不读取或写入 `spec.json`。开始编码前，必须确认用户已经完成以下阶段确认：`clarification.md` 的需求澄清、`requirements.md` 的需求范围、`design.md` 的设计评审、`tasks.md` 的任务评审。仅凭显式调用本 Skill 不足以跳过这些门禁；缺少确认时停止编码并提示用户先完成对应阶段。
 
@@ -183,6 +183,6 @@ mvn package -pl <module> -am -DskipTests
 
 2. **多 Subagent 并发隔离要求**：
    - 仅当明确启用了 Git Worktree 物理隔离机制时，才允许并行处理标记为 `(P)` 的任务；
-   - 每个子代理必须在独立的 `.worktrees/clue-lens-<task>` 目录下运行（通过 `scripts/agent/worktree.sh new`），拥有隔离的 Git 分支与文件副本；
+   - 每个子代理必须在独立的 `.worktrees/clue-lens-<task>` 目录下运行（通过 `node scripts/agent/worktree.mjs new`），拥有隔离的 Git 分支与文件副本；
    - 子代理之间修改的组件与职责边界（`_Boundary:_`）必须 100% 互斥，严禁多子代理重叠碰触同一文件；
    - 子代理开发测试绿灯后，由主代理或人工统一进行 Git 分支 Merge，严禁直接无序提交。

@@ -20,7 +20,7 @@ ARCHITECTURE.md             @clue-lens/architecture-owner
 /.githooks/                 @clue-lens/quality-owner
 /.gitlab/                   @clue-lens/quality-owner @clue-lens/architecture-owner
 /scripts/gates/             @clue-lens/quality-owner @clue-lens/architecture-owner
-/scripts/review.sh          @clue-lens/quality-owner @clue-lens/architecture-owner
+/scripts/review.mjs         @clue-lens/quality-owner @clue-lens/architecture-owner
 /scripts/review-checks.list @clue-lens/quality-owner @clue-lens/architecture-owner
 
 # ==============================================================================

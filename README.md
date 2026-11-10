@@ -56,7 +56,7 @@ clue-lens/
 │   ├── README.md              # SDD 五阶段流转全景
 │   └── clue-lens/             # 业务规格（raw-req -> clarification -> requirements -> design -> tasks）
 ├── scripts/                   # 自动化运维、质量门禁与智能体脚本
-│   ├── review.sh              # 门禁审查唯一总入口（支持 --staged）
+│   ├── review.mjs             # 门禁审查唯一总入口（npm run review，支持 --staged）
 │   ├── review-checks.list     # 门禁审查可插拔配置清单
 │   ├── lib/                   # 跨平台执行与 Manifest 契约共享库 (exec/agent-contract)
 │   ├── gates/                 # 质量门禁检查类脚本 (check-*.mjs)

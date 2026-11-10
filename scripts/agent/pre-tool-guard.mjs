@@ -142,7 +142,7 @@ function checkWorktreeFence({ toolName = "", cmd = "", filePath = "", rawData = 
       `   - 目标路径: ${path.relative(toplevel, targetPath) || targetPath}\n` +
       `   - 所在分支: ${branch}\n` +
       `👉 架构红线：遵循 rules/08-worktree-workflow.md，严禁直接在主工作区 ${branch} 分支动手。\n` +
-      `   正确流程：请先执行 ./scripts/agent/worktree.sh new <slug> 创建隔离沙盒，并在 .worktrees/clue-lens-<slug> 目录下进行改动与测试验证！`
+      `   正确流程：请先执行 node scripts/agent/worktree.mjs new <slug> 创建隔离沙盒，并在 .worktrees/clue-lens-<slug> 目录下进行改动与测试验证！`
     );
   }
 }

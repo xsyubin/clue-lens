@@ -72,7 +72,6 @@ for (const f of [
   "drizzle.config.ts",
   "next.config.ts",
   "postcss.config.mjs",
-  "scripts/review.sh",
   "scripts/review.mjs",
   "scripts/review-checks.list",
   "src/app/globals.css",
@@ -126,13 +125,30 @@ checkFileExists(".agents/skills/spec-review/SKILL.md");
 checkFileExists("scripts/lib/exec.mjs");
 checkFileExists("scripts/lib/agent-contract.mjs");
 checkFileExists("scripts/gates/check-manifest.mjs");
-checkFileExists("scripts/agent/agent-run.sh");
 checkFileExists("scripts/agent/agent-run.mjs");
-checkFileExists("scripts/agent/worktree.sh");
 checkFileExists("scripts/agent/worktree.mjs");
-checkFileExists("scripts/agent/pre-tool-guard.sh");
 checkFileExists("scripts/agent/pre-tool-guard.mjs");
 checkContentContains(".claude/settings.json", "pre-tool-guard.mjs", "Claude Code PreToolUse Hook 配置");
+
+console.log("--- 8. Shell 脚本禁令检查 (scripts/ 下不允许 .sh) ---");
+function findShFiles(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...findShFiles(full));
+    else if (entry.name.endsWith(".sh")) out.push(full);
+  }
+  return out;
+}
+const shFiles = findShFiles(path.join(ROOT, "scripts"));
+if (shFiles.length > 0) {
+  for (const f of shFiles) {
+    console.error(`❌ [VIOLATION] scripts/ 下禁止新增 shell 脚本（请使用 Node.js ESM）: ${path.relative(ROOT, f)}`);
+    failures += 1;
+  }
+} else {
+  console.log("✅ [CLEAN] scripts/ 下无 shell 脚本，工具链全 Node.js ESM 化");
+}
 
 console.log("==================================================================");
 if (failures > 0) {
