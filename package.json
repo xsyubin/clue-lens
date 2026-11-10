@@ -14,6 +14,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "demo": "bash scripts/demo/menu.sh",
     "review": "node scripts/review.mjs",
     "check:consistency": "node scripts/gates/check-consistency.mjs",
     "check:security": "node scripts/gates/check-security.mjs",

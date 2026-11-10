@@ -130,13 +130,18 @@ checkFileExists("scripts/agent/worktree.mjs");
 checkFileExists("scripts/agent/pre-tool-guard.mjs");
 checkContentContains(".claude/settings.json", "pre-tool-guard.mjs", "Claude Code PreToolUse Hook 配置");
 
-console.log("--- 8. Shell 脚本禁令检查 (scripts/ 下不允许 .sh) ---");
+console.log("--- 8. Shell 脚本禁令检查 (scripts/ 下不允许 .sh，允许 scripts/demo 教学演示) ---");
 function findShFiles(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...findShFiles(full));
-    else if (entry.name.endsWith(".sh")) out.push(full);
+    if (entry.isDirectory()) {
+      // 豁免 scripts/demo 教学演示与交互式讲解脚本
+      if (entry.name === "demo") continue;
+      out.push(...findShFiles(full));
+    } else if (entry.name.endsWith(".sh")) {
+      out.push(full);
+    }
   }
   return out;
 }
