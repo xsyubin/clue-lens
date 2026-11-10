@@ -18,6 +18,7 @@
     "review": "node scripts/review.mjs",
     "check:consistency": "node scripts/gates/check-consistency.mjs",
     "check:security": "node scripts/gates/check-security.mjs",
+    "check:build": "node scripts/gates/check-build.mjs",
     "mcp": "node scripts/mcp/server.mjs",
     "test:mcp": "node scripts/mcp/test-client.mjs",
     "db:push": "drizzle-kit push",

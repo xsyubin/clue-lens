@@ -2,7 +2,7 @@
 
 - **检查清单**: `scripts/review-checks.list`
 - **总决议**: ✅ PASS (全部通过)
-- **门禁状态**: 全部 8/8 项门禁通过
+- **门禁状态**: 全部 7/7 项门禁通过
 
 | 检查项 | 状态 | 详情 / 备注 |
 |---|---|---|
@@ -13,4 +13,3 @@
 | `scripts/gates/check-manifest.mjs` | 🟢 PASS | 正常通过 |
 | `scripts/gates/check-types.mjs` | 🟢 PASS | 正常通过 |
 | `scripts/gates/check-tests.mjs` | 🟢 PASS | 正常通过 |
-| `scripts/gates/check-build.mjs` | 🟢 PASS | 正常通过 |
