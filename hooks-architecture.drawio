@@ -1,0 +1,255 @@
+<mxfile host="Electron" modified="2026-11-10T07:31:22.226Z" agent="Antigravity" version="21.6.8" type="device">
+  <diagram id="clue-lens-hooks-topology" name="Clue-Lens Hooks &amp; Gates Architecture">
+    <mxGraphModel dx="1660" dy="1120" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1660" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_banner" parent="1" value="&lt;b&gt;Clue-Lens 架构钩子 (Hooks) 与全生命周期质量/安全门禁调用拓扑&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:12px;font-weight:normal;color:#94A3B8;&apos;&gt;涵盖 Git Hooks、AI Agent 前置护栏 (PreToolUse)、Worktree 物理沙盒隔离、确定性审查总控与 8 大质量门禁&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#334155;fontColor=#F8FAFC;fontSize=16;align=center;shadow=1;" vertex="1">
+          <mxGeometry x="30" y="20" width="1600" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="swimlane_c1" parent="1" value="&lt;b&gt;1. 触发入口与钩子装配 (Triggers &amp;amp; Hook Configs)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=32;horizontalFlip=0;fillColor=#F0F9FF;strokeColor=#0284C7;fontColor=#0369A1;fontSize=13;rounded=1;arcSize=4;shadow=0;" vertex="1">
+          <mxGeometry x="30" y="105" width="320" height="985" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_body" parent="swimlane_c1" value="" style="fillColor=none;strokeColor=none;rounded=0;whiteSpace=wrap;html=1;" vertex="1">
+          <mxGeometry x="0" y="32" width="320" height="953" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_setup" parent="1" value="&lt;b&gt;scripts/ops/setup.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#475569;&apos;&gt;• 初始化环境生成 .env&lt;br/&gt;• 激活 Git 门禁：&lt;code&gt;git config core.hooksPath .githooks&lt;/code&gt;&lt;br/&gt;• 自动为脚本与钩子赋权 &lt;code&gt;chmod +x&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontColor=#0F172A;fontSize=12;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="50" y="150" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_commit" parent="1" value="&lt;b&gt;开发者 / Agent 代码提交&lt;/b&gt;&lt;br/&gt;&lt;code style=&apos;color:#0369A1;&apos;&gt;git commit -m &quot;...&quot;&lt;/code&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BAE6FD;strokeColor=#0284C7;fontColor=#0C4A6E;fontSize=12;fontStyle=1;shadow=1;" vertex="1">
+          <mxGeometry x="80" y="260" width="220" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_pre_commit" parent="1" value="&lt;b&gt;.githooks/pre-commit&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;&lt;b&gt;Git 物理预提交钩子&lt;/b&gt;&lt;br/&gt;① 暂存区敏感凭证扫描 (.env, id_rsa, .pem)&lt;br/&gt;② 驱动 &lt;code&gt;node scripts/review.mjs --staged&lt;/code&gt;&lt;br/&gt;③ 自动暂存审计报告 &lt;code&gt;git add evidence/...&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontSize=12;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="50" y="345" width="280" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_antigravity" parent="1" value="&lt;b&gt;Antigravity / Codex AI Agent&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#475569;&apos;&gt;触发工具调用 (read_file, run_command, edit_file 等)&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F5D0FE;strokeColor=#A855F7;fontColor=#581C87;fontSize=12;fontStyle=1;shadow=1;" vertex="1">
+          <mxGeometry x="60" y="470" width="260" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_hooks_json" parent="1" value="&lt;b&gt;.agents/hooks.json&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;&lt;b&gt;Agent PreToolUse 钩子规范&lt;/b&gt;&lt;br/&gt;• matcher: &lt;code&gt;read_file|run_command|Bash|Edit|Write...&lt;/code&gt;&lt;br/&gt;• hook: &lt;code&gt;node ../scripts/agent/pre-tool-guard.mjs&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#9333EA;fontColor=#581C87;fontSize=12;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="50" y="550" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_claude" parent="1" value="&lt;b&gt;Claude Code AI Agent&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#475569;&apos;&gt;触发 Bash / Edit / Write 工具操作&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FED7AA;strokeColor=#F97316;fontColor=#7C2D12;fontSize=12;fontStyle=1;shadow=1;" vertex="1">
+          <mxGeometry x="80" y="655" width="220" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_claude_settings" parent="1" value="&lt;b&gt;.claude/settings.json&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;&lt;b&gt;Claude PreToolUse Hook 配置&lt;/b&gt;&lt;br/&gt;• matcher: &lt;code&gt;Bash|Edit|Write&lt;/code&gt;&lt;br/&gt;• command: &lt;code&gt;node scripts/agent/pre-tool-guard.mjs&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEDD5;strokeColor=#EA580C;fontColor=#7C2D12;fontSize=12;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="50" y="735" width="280" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_cli" parent="1" value="&lt;b&gt;开发者 / CI 命令行总控&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;• &lt;code&gt;npm run review&lt;/code&gt; (完整审查)&lt;br/&gt;• &lt;code&gt;npm run check:consistency&lt;/code&gt; (规范审查)&lt;br/&gt;• &lt;code&gt;npm run check:security&lt;/code&gt; (安全审查)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;fontColor=#0F172A;fontSize=12;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="50" y="840" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_worktree_cli" parent="1" value="&lt;b&gt;Worktree 生命周期指令&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;• &lt;code&gt;node scripts/agent/worktree.mjs new &amp;lt;slug&amp;gt;&lt;/code&gt;&lt;br/&gt;• &lt;code&gt;node scripts/agent/worktree.mjs merge &amp;lt;slug&amp;gt;&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E2E8F0;strokeColor=#475569;fontColor=#0F172A;fontSize=12;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="50" y="945" width="280" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="swimlane_c2" parent="1" value="&lt;b&gt;2. 智能体安全护栏与隔离沙盒 (scripts/agent)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=32;horizontalFlip=0;fillColor=#FAF5FF;strokeColor=#7C3AED;fontColor=#6D28D9;fontSize=13;rounded=1;arcSize=4;shadow=0;" vertex="1">
+          <mxGeometry x="370" y="105" width="410" height="985" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_body" parent="swimlane_c2" value="" style="fillColor=none;strokeColor=none;rounded=0;whiteSpace=wrap;html=1;" vertex="1">
+          <mxGeometry x="0" y="32" width="410" height="953" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_guard" parent="1" value="&lt;b&gt;scripts/agent/pre-tool-guard.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:12px;color:#4C1D95;&apos;&gt;&lt;b&gt;统一 AI 运行期护栏 (PreTool Guard)&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #DDD6FE;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#334155;text-align:left;display:block;&apos;&gt;&lt;b&gt;① 凭据护栏&lt;/b&gt;：阻断 &lt;code&gt;.env&lt;/code&gt;、&lt;code&gt;id_rsa&lt;/code&gt;、&lt;code&gt;.pem&lt;/code&gt;、&lt;code&gt;BETTER_AUTH_SECRET&lt;/code&gt;&lt;br/&gt;&lt;b&gt;② 传输护栏&lt;/b&gt;：阻断 &lt;code&gt;curl --data&lt;/code&gt;、&lt;code&gt;wget&lt;/code&gt;、&lt;code&gt;nc&lt;/code&gt;、&lt;code&gt;scp&lt;/code&gt;、&lt;code&gt;git push&lt;/code&gt;&lt;br/&gt;&lt;b&gt;③ 架构护栏&lt;/b&gt;：阻断篡改 &lt;code&gt;next.config.ts&lt;/code&gt;、&lt;code&gt;drizzle.config.ts&lt;/code&gt;&lt;br/&gt;&lt;b&gt;④ Worktree 物理隔离围栏 (rules/08)&lt;/b&gt;：&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;🔴 严禁在主工作区 &lt;code&gt;main&lt;/code&gt; 分支直接写入文件或提交代码！&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;👉 强制拦截并输出指引：先执行 &lt;code&gt;worktree.mjs new &amp;lt;slug&amp;gt;&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#1E1B4B;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="390" y="150" width="370" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_worktree" parent="1" value="&lt;b&gt;scripts/agent/worktree.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:12px;color:#1E3A8A;&apos;&gt;&lt;b&gt;跨平台 Worktree 生命周期与合并门禁&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #BFDBFE;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#334155;text-align:left;display:block;&apos;&gt;&lt;b&gt;🌱 new &amp;lt;slug&amp;gt; (隔离沙盒拉起)&lt;/b&gt;&lt;br/&gt;• 创建独立分支 &lt;code&gt;agent/&amp;lt;slug&amp;gt;&lt;/code&gt; 与目录 &lt;code&gt;.worktrees/clue-lens-&amp;lt;slug&amp;gt;&lt;/code&gt;&lt;br/&gt;• 软链共享 &lt;code&gt;node_modules&lt;/code&gt; (免重装)&lt;br/&gt;• 克隆私有沙盒数据库 &lt;code&gt;data/app.db&lt;/code&gt; (物理杜绝 SQLite lock)&lt;br/&gt;• 自动复制 &lt;code&gt;.env&lt;/code&gt; 配置沙盒&lt;br/&gt;&lt;b&gt;🚀 merge &amp;lt;slug&amp;gt; (快进合并门禁)&lt;/b&gt;&lt;br/&gt;• 确保分支无未提交变动且为 main 最新后代 (冲突自动 rebase)&lt;br/&gt;• &lt;b&gt;门禁 1&lt;/b&gt;：自动驱动 &lt;code&gt;node scripts/review.mjs&lt;/code&gt; 全套审查&lt;br/&gt;• &lt;b&gt;门禁 2&lt;/b&gt;：校验 Manifest 审计凭据 &lt;code&gt;evidence/agent-runs/&amp;lt;slug&amp;gt;/*.md&lt;/code&gt;&lt;br/&gt;• 确定性双绿灯后 &lt;code&gt;git merge --ff-only&lt;/code&gt; 并清理沙盒与分支&lt;br/&gt;&lt;b&gt;🗑️ drop &amp;lt;slug&amp;gt;&lt;/b&gt;：安全放弃并清理隔离分支与目录&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;fontColor=#0F172A;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="390" y="375" width="370" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_agent_run" parent="1" value="&lt;b&gt;scripts/agent/agent-run.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:12px;color:#065F46;&apos;&gt;&lt;b&gt;多智能体角色调度与合规流水线&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #A7F3D0;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#334155;text-align:left;display:block;&apos;&gt;&lt;b&gt;① 结构门禁&lt;/b&gt;：调用 &lt;code&gt;scripts/gates/check-manifest.mjs&lt;/code&gt; 防漂移&lt;br/&gt;&lt;b&gt;② 隔离沙盒&lt;/b&gt;：调用 &lt;code&gt;worktree.mjs new &amp;lt;name&amp;gt;&lt;/code&gt; 创建独立环境&lt;br/&gt;&lt;b&gt;③ 运行期护栏&lt;/b&gt;：执行角色命令前动态调用 &lt;code&gt;pre-tool-guard.mjs&lt;/code&gt;&lt;br/&gt;&lt;b&gt;④ 驱动 Checks&lt;/b&gt;：映射执行 &lt;code&gt;markdown-links&lt;/code&gt;、&lt;code&gt;typecheck&lt;/code&gt;、&lt;code&gt;review&lt;/code&gt; 等&lt;br/&gt;&lt;b&gt;⑤ 路径防卫&lt;/b&gt;：比对 Git 变动是否越界 &lt;code&gt;allowed_paths&lt;/code&gt; / &lt;code&gt;forbidden_paths&lt;/code&gt;&lt;br/&gt;&lt;b&gt;⑥ 凭证沉淀&lt;/b&gt;：生成角色审计文件 &lt;code&gt;evidence/agent-runs/&amp;lt;name&amp;gt;/&amp;lt;role&amp;gt;.md&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;fontColor=#064E3B;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="390" y="655" width="370" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_contract" parent="1" value="&lt;b&gt;.agents/agent-manifest.yml &amp;amp; scripts/lib/agent-contract.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;&lt;b&gt;智能体协作单一权威源 (SSOT)&lt;/b&gt;&lt;br/&gt;• 定义角色 (spec-analyst, fullstack-implementer, quality-reviewer)&lt;br/&gt;• 约束 inputs, outputs, allowed_paths, forbidden_paths, checks, commands&lt;br/&gt;• 声明 &lt;code&gt;merge_policy&lt;/code&gt;: 必须具备合规凭证方可合并到 main&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#EAB308;fontColor=#713F12;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="390" y="885" width="370" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="swimlane_c3" parent="1" value="&lt;b&gt;3. 确定性机器审查引擎 (Review Controller)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=32;horizontalFlip=0;fillColor=#FFFBEB;strokeColor=#D97706;fontColor=#B45309;fontSize=13;rounded=1;arcSize=4;shadow=0;" vertex="1">
+          <mxGeometry x="800" y="105" width="350" height="985" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_body" parent="swimlane_c3" value="" style="fillColor=none;strokeColor=none;rounded=0;whiteSpace=wrap;html=1;" vertex="1">
+          <mxGeometry x="0" y="32" width="350" height="953" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_review" parent="1" value="&lt;b&gt;scripts/review.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:12px;color:#92400E;&apos;&gt;&lt;b&gt;跨平台确定性机器审查总控 (Node.js ESM)&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #FDE68A;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#334155;text-align:left;display:block;&apos;&gt;• &lt;b&gt;清单驱动&lt;/b&gt;：动态读取 &lt;code&gt;scripts/review-checks.list&lt;/code&gt;&lt;br/&gt;• &lt;b&gt;审查范围&lt;/b&gt;：支持 &lt;code&gt;--staged&lt;/code&gt; (Git 暂存区增量) 或完整工作区&lt;br/&gt;• &lt;b&gt;确定性执行&lt;/b&gt;：跨平台 &lt;code&gt;spawnSync&lt;/code&gt; 串行执行各门禁脚本&lt;br/&gt;• &lt;b&gt;决议判定&lt;/b&gt;：全绿返回 0；任一项异常返回 1 (Fail-Closed)&lt;br/&gt;• &lt;b&gt;输出报告&lt;/b&gt;：幂等渲染并输出结构化 Markdown 审计报告&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;fontColor=#78350F;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="820" y="150" width="310" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_list" parent="1" value="&lt;b&gt;scripts/review-checks.list&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#92400E;&apos;&gt;&lt;b&gt;门禁执行序清单 (单一配置事实源)&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #FDE68A;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#1E293B;font-family:monospace;display:block;&apos;&gt;1. scripts/gates/check-consistency.mjs&lt;br/&gt;2. scripts/gates/check-security.mjs&lt;br/&gt;3. scripts/gates/check-secrets.mjs&lt;br/&gt;4. scripts/gates/check-mcp.mjs&lt;br/&gt;5. scripts/gates/check-manifest.mjs&lt;br/&gt;6. scripts/gates/check-types.mjs&lt;br/&gt;7. scripts/gates/check-tests.mjs&lt;br/&gt;8. scripts/gates/check-build.mjs&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFDF5;strokeColor=#D97706;fontColor=#451A03;fontSize=11;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="820" y="360" width="310" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_exec" parent="1" value="&lt;b&gt;scripts/lib/exec.mjs&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;&lt;b&gt;跨平台进程执行工具库&lt;/b&gt;&lt;br/&gt;• 解析定位仓库物理根目录 &lt;code&gt;ROOT&lt;/code&gt;&lt;br/&gt;• 封装 &lt;code&gt;run()&lt;/code&gt; 与 &lt;code&gt;runNpmScript()&lt;/code&gt;，统一捕获 exitCode 与 stdio&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontColor=#0F172A;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="820" y="610" width="310" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_report" parent="1" value="&lt;b&gt;evidence/deterministic-review-report.md&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#14532D;&apos;&gt;&lt;b&gt;确定性机器前置审查审计报告 (Markdown)&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #BBF7D0;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#334155;text-align:left;display:block;&apos;&gt;• 记录总决议：✅ PASS (全部通过) / ❌ FAIL&lt;br/&gt;• 记录 8 大门禁状态明细表与 exitCode&lt;br/&gt;• &lt;b&gt;闭环机制&lt;/b&gt;：每次 &lt;code&gt;git commit&lt;/code&gt; 时由 pre-commit 钩子自动 &lt;code&gt;git add&lt;/code&gt; 暂存入库，确保审查证据与提交代码同批次落盘留痕&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;fontColor=#14532D;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="820" y="720" width="310" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="swimlane_c4" parent="1" value="&lt;b&gt;4. 8 大质量与安全门禁 (scripts/gates/*.mjs)&lt;/b&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=32;horizontalFlip=0;fillColor=#ECFDF5;strokeColor=#059669;fontColor=#047857;fontSize=13;rounded=1;arcSize=4;shadow=0;" vertex="1">
+          <mxGeometry x="1170" y="105" width="460" height="985" as="geometry" />
+        </mxCell>
+        <mxCell id="c4_body" parent="swimlane_c4" value="" style="fillColor=none;strokeColor=none;rounded=0;whiteSpace=wrap;html=1;" vertex="1">
+          <mxGeometry x="0" y="32" width="460" height="953" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_1" parent="1" value="&lt;b&gt;① check-consistency.mjs (工程与架构一致性)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;校验必需文档、数据库表结构一致性、Hook 配置规范 (&lt;code&gt;.claude/settings.json&lt;/code&gt;) 与命名规约&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#10B981;fontColor=#064E3B;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="150" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_2" parent="1" value="&lt;b&gt;② check-security.mjs (全栈静态安全与架构红线)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;校验 &lt;code&gt;requireSession()&lt;/code&gt; 入口、数据租户隔离 &lt;code&gt;eq(table.userId, ...)&lt;/code&gt;、Zod 入参严格防卫、严禁 SQL 拼接、涉案手机号脱敏&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EF4444;fontColor=#7F1D1D;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="230" width="420" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_3" parent="1" value="&lt;b&gt;③ check-secrets.mjs (高置信度敏感私钥/Token 扫描)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;确定性扫描阻断 RSA/OPENSSH/EC 私钥、AWS/GitHub/OpenAI Token 泄露；支持 &lt;code&gt;--staged&lt;/code&gt; 暂存区针对性扫描&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F59E0B;fontColor=#78350F;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="320" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_4" parent="1" value="&lt;b&gt;④ check-mcp.mjs (MCP 服务协议契约与权限审计)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;跨进程执行 &lt;code&gt;scripts/mcp/test-client.mjs&lt;/code&gt;，校验 Schema 只读探查、白名单防卫、GUEST 权限阻断与审计日志&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8B5CF6;fontColor=#4C1D95;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="400" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_5" parent="1" value="&lt;b&gt;⑤ check-manifest.mjs (Agent Manifest 契约门禁)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;复用 &lt;code&gt;agent-contract.mjs&lt;/code&gt; 解析器，严格验证角色定义、字段完整度与 &lt;code&gt;SUPPORTED_CHECKS&lt;/code&gt;，防契约漂移与 fail-open&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#06B6D4;fontColor=#164E63;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="480" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_6" parent="1" value="&lt;b&gt;⑥ check-types.mjs (类型安全与代码质量门禁)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;驱动 &lt;code&gt;npm run typecheck&lt;/code&gt; (&lt;code&gt;tsc --noEmit&lt;/code&gt;) 全量静态类型检查与 &lt;code&gt;npm run lint&lt;/code&gt; (&lt;code&gt;eslint .&lt;/code&gt;) 规则检查&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#3B82F6;fontColor=#1E3A8A;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="560" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_7" parent="1" value="&lt;b&gt;⑦ check-tests.mjs (全量自动化测试与状态机流转)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;驱动 &lt;code&gt;npm run test&lt;/code&gt; (&lt;code&gt;tsx --test&lt;/code&gt;) 全量测试：鉴权与隔离、线索状态机跃迁守卫、Excel 解析与护栏测试&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#10B981;fontColor=#064E3B;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="640" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gate_8" parent="1" value="&lt;b&gt;⑧ check-build.mjs (Next.js 生产环境构建编译)&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#334155;&apos;&gt;驱动 &lt;code&gt;npm run build&lt;/code&gt; (&lt;code&gt;next build&lt;/code&gt;)，验证 SSR/RSC 边界、better-sqlite3 原生模块排除与生产级可部署性&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6366F1;fontColor=#312E81;fontSize=11;align=left;spacingLeft=10;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="720" width="420" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="evidence_role" parent="1" value="&lt;b&gt;evidence/agent-runs/&amp;lt;run-id&amp;gt;/&amp;lt;role&amp;gt;.md&lt;/b&gt;&lt;br/&gt;&lt;span style=&apos;font-size:11px;color:#065F46;&apos;&gt;&lt;b&gt;智能体角色执行凭据 (Agent Evidence)&lt;/b&gt;&lt;/span&gt;&lt;hr style=&apos;border:0.5px solid #6EE7B7;&apos;/&gt;&lt;span style=&apos;font-size:11px;color:#334155;text-align:left;display:block;&apos;&gt;• 记录智能体目标、执行命令日志、Checks 状态表格&lt;br/&gt;• 记录变动文件清单与 &lt;code&gt;allowed_paths&lt;/code&gt; / &lt;code&gt;forbidden_paths&lt;/code&gt; 判定&lt;br/&gt;• 门禁判定：🟢 合规通过 / 🔴 违规拦截&lt;br/&gt;• &lt;b&gt;合并门槛&lt;/b&gt;：worktree merge 时由 Manifest merge_policy 强校验&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;fontColor=#064E3B;fontSize=12;align=left;spacingLeft=12;shadow=1;" vertex="1">
+          <mxGeometry x="1190" y="810" width="420" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_setup_precommit" parent="1" value="git config core.hooksPath" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284C7;strokeWidth=2;fontColor=#0284C7;fontSize=10;" edge="1" source="c1_setup" target="c1_pre_commit">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_commit_precommit" parent="1" value="触发执行" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=2;fontColor=#1E3A8A;fontSize=10;" edge="1" source="c1_commit" target="c1_pre_commit">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_precommit_review" parent="1" value="跨进程驱动 (node scripts/review.mjs --staged)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=2.5;fontColor=#1D4ED8;fontSize=11;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c1_pre_commit" target="c3_review">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_antigravity_hooks" parent="1" value="PreToolUse 匹配" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333EA;strokeWidth=2;fontColor=#6B21A8;fontSize=10;" edge="1" source="c1_antigravity" target="c1_hooks_json">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_hooks_guard" parent="1" value="触发 stdin JSON / CLI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333EA;strokeWidth=2.5;fontColor=#6B21A8;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" source="c1_hooks_json" target="c2_guard">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_claude_settings" parent="1" value="PreToolUse 拦截" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EA580C;strokeWidth=2;fontColor=#C2410C;fontSize=10;" edge="1" source="c1_claude" target="c1_claude_settings">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_claude_guard" parent="1" value="触发 Hook 审查" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EA580C;strokeWidth=2.5;fontColor=#C2410C;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" source="c1_claude_settings" target="c2_guard">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_guard_worktree" parent="1" value="主分支写文件/commit 坚决阻断！指引使用 worktree 隔离沙盒" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#DC2626;strokeWidth=2;fontColor=#B91C1C;fontSize=11;fontStyle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="c2_guard" target="c2_worktree">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_worktree_cli" parent="1" value="node scripts/agent/worktree.mjs new|merge|drop" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=2;fontColor=#334155;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.85;entryDx=0;entryDy=0;" edge="1" source="c1_worktree_cli" target="c2_worktree">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_agentrun_checkmanifest" parent="1" value="结构门禁先行" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=2;fontColor=#0E7490;fontSize=10;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c2_agent_run" target="gate_5">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_agentrun_worktree" parent="1" value="创建沙盒: worktree new" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10B981;strokeWidth=2;fontColor=#047857;fontSize=10;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" source="c2_agent_run" target="c2_worktree">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_agentrun_guard" parent="1" value="运行前命令安全预审" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7C3AED;strokeWidth=2;fontColor=#6D28D9;fontSize=10;exitX=0.2;exitY=0;exitDx=0;exitDy=0;entryX=0.2;entryY=1;entryDx=0;entryDy=0;" edge="1" source="c2_agent_run" target="c2_guard">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_agentrun_contract" parent="1" value="读取角色契约 &amp; checks 映射" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EAB308;strokeWidth=2;fontColor=#A16207;fontSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="c2_agent_run" target="c2_contract">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_agentrun_evidence" parent="1" value="生成角色审计凭证" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=2.5;fontColor=#047857;fontSize=11;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c2_agent_run" target="evidence_role">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_worktree_review" parent="1" value="merge 门禁 ①: 跑全套确定性审查" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#D97706;strokeWidth=2.5;fontColor=#B45309;fontSize=11;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" edge="1" source="c2_worktree" target="c3_review">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_worktree_evidence" parent="1" value="merge 门禁 ②: 校验 Manifest 审计凭据 (严禁未审分支合并)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=2.5;fontColor=#047857;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" edge="1" source="c2_worktree" target="evidence_role">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_review_list" parent="1" value="解析门禁清单" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#D97706;strokeWidth=2;fontColor=#92400E;fontSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="c3_review" target="c3_list">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_review_report" parent="1" value="格式化更新审查报告 (Markdown 审计卡)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16A34A;strokeWidth=2.5;fontColor=#15803D;fontSize=11;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="c3_report">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_precommit_add_report" parent="1" value="审查通过后自动 git add 报告入库" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16A34A;strokeWidth=2;fontColor=#15803D;fontSize=10;exitX=1;exitY=0.9;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c1_pre_commit" target="c3_report">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_cli_review" parent="1" value="npm run review" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;strokeWidth=2;fontColor=#475569;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" edge="1" source="c1_cli" target="c3_review">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_1" parent="1" value="按序号串行执行" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_1">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_2" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_2">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_3" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_3">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_4" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_4">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_5" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_5">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_6" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_6">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_7" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_7">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_list_gate_8" parent="1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=1.5;fontColor=#065F46;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="c3_list" target="gate_8">
+          <mxGeometry relative="1" as="geometry">
+            
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
