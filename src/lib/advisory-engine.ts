@@ -6,6 +6,16 @@ export interface AdvisoryResult {
   measures: string;
   legalBasis: string;
   focusPoints: string[];
+  modelName?: string;
+  fallbackReason?: string;
+}
+
+export interface GenerateAdvisoryOptions {
+  useAi?: boolean;
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+  timeoutMs?: number;
 }
 
 /**
@@ -131,23 +141,50 @@ const DEFAULT_EXPERT_ADVISORY = {
 };
 
 /**
+/**
+ * 健壮的 JSON 结构提取器（支持 Markdown 代码块包裹与前后缀文本容错）
+ */
+function extractAdvisoryJson(rawText: string): Record<string, unknown> | null {
+  if (!rawText) return null;
+  let text = rawText.trim();
+  // 剥离 ```json ... ``` 包裹
+  if (text.startsWith("```")) {
+    text = text.replace(/^```[a-zA-Z]*\r?\n?/, "").replace(/\r?\n?```$/, "").trim();
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    // 正则提取首个 { 到末尾 }
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+/**
  * 双模处置建议生成引擎
  */
 export async function generateAdvisory(
   clue: Pick<MonopolyClue, "type" | "riskLevel" | "targetName" | "region" | "amount">,
-  options?: { useAi?: boolean; apiKey?: string }
+  options?: GenerateAdvisoryOptions
 ): Promise<AdvisoryResult> {
   const typeKey = clue.type || "经营异常";
   const riskKey = clue.riskLevel || "中";
 
-  // 1. 匹配内置专家规则库
+  // 1. 匹配内置专家规则库作为基础/兜底模板
   const expertTemplate =
     EXPERT_KNOWLEDGE_BASE[typeKey]?.[riskKey] ||
     EXPERT_KNOWLEDGE_BASE[typeKey]?.["中"] ||
     DEFAULT_EXPERT_ADVISORY;
 
-  // 2. 如果不需要 AI 或未配置 Key，直接返回专家规则
-  if (!options?.useAi || !options?.apiKey) {
+  // 2. 如果未开启 AI 研判，直接返回专家规则
+  if (!options?.useAi) {
     return {
       source: "EXPERT_RULE",
       direction: expertTemplate.direction,
@@ -157,64 +194,124 @@ export async function generateAdvisory(
     };
   }
 
-  // 3. AI 增强模式（带无缝超时与容错降级）
-  try {
-    const prompt = `你是一名烟草专卖监管执法专家，请针对以下线索出具结构化处置措施建议：
-- 经营对象：${clue.targetName}
-- 所属区域：${clue.region}
-- 线索类型：${clue.type}
-- 风险等级：${clue.riskLevel}
-- 涉案金额：￥${clue.amount} 元
+  // 3. 校验 API Key，若未配置则明确降级并说明原因
+  const apiKey = options.apiKey;
+  if (!apiKey) {
+    return {
+      source: "EXPERT_RULE",
+      direction: expertTemplate.direction,
+      measures: expertTemplate.measures,
+      legalBasis: expertTemplate.legalBasis,
+      focusPoints: expertTemplate.focusPoints,
+      fallbackReason: "系统未检测到大模型密钥（LLM_API_KEY），已自动启用内置专家建议",
+    };
+  }
 
-请直接以 JSON 格式输出建议，包含字段：
+  const rawBaseUrl = options.baseUrl || "http://token.ai.longjitech.com/v1";
+  const cleanBase = rawBaseUrl.replace(/\/+$/, "");
+  const targetUrl = cleanBase.endsWith("/chat/completions")
+    ? cleanBase
+    : `${cleanBase}/chat/completions`;
+  const targetModel = options.model || "gpt-6-luna";
+  const timeoutMs = options.timeoutMs ?? 60000;
+
+  // 4. AI 深度研判（带完整超时守卫与容错降级）
+  try {
+    const prompt = `你是一名烟草专卖监管执法与案由审理专家，请针对以下案件线索出具结构化处置措施建议：
+- 经营对象：${clue.targetName || "未标明商户"}
+- 所属区域：${clue.region || "辖区"}
+- 线索类型：${clue.type || "涉烟异常"}
+- 风险等级：${clue.riskLevel || "中"}
+- 涉案金额：￥${clue.amount ?? 0} 元
+
+请根据涉案主体特征、涉案金额与追刑门槛（如涉案金额达到或接近5万元的非法经营追究刑事责任标准），给出专业、针对性强的排查步骤与处置方案。
+
+请直接以 JSON 格式输出建议，严禁包裹多余闲聊，包含以下必填字段：
 {
-  "direction": "处置主攻方向",
-  "measures": "具体1、2、3条处置措施",
-  "legalBasis": "具体法条",
+  "direction": "处置主攻方向（精炼说明当前首要处置策略与重心）",
+  "measures": "具体1、2、3条处置措施（结合具体经营主体和涉案金额排查）",
+  "legalBasis": "具体法律法规依据（法条全称与具体款项）",
   "focusPoints": ["排查重点1", "排查重点2"]
 }`;
 
-    // 使用 AbortController 实现 3 秒快速超时守卫
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(targetUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${options.apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+        model: targetModel,
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是一名资深的烟草专卖执法专家。请直接以标准 JSON 对象输出处置方案，不要包含任何 markdown 代码块以外的解释。",
+          },
+          { role: "user", content: prompt },
+        ],
         temperature: 0.2,
       }),
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
+    clearTimeout(timer);
 
-    if (response.ok) {
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      const cleanJson = content?.replace(/^```json/, "").replace(/```$/, "").trim();
-      const parsed = JSON.parse(cleanJson);
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
       return {
-        source: "AI_ENHANCED",
-        direction: parsed.direction || expertTemplate.direction,
-        measures: parsed.measures || expertTemplate.measures,
-        legalBasis: parsed.legalBasis || expertTemplate.legalBasis,
-        focusPoints: Array.isArray(parsed.focusPoints) ? parsed.focusPoints : expertTemplate.focusPoints,
+        source: "EXPERT_RULE",
+        direction: expertTemplate.direction,
+        measures: expertTemplate.measures,
+        legalBasis: expertTemplate.legalBasis,
+        focusPoints: expertTemplate.focusPoints,
+        fallbackReason: `大模型请求异常（HTTP ${response.status}），已自动降级为内置专家建议`,
       };
     }
-  } catch {
-    // 静默容错，自动无缝降级为专家规则
-  }
 
-  return {
-    source: "EXPERT_RULE",
-    direction: expertTemplate.direction,
-    measures: expertTemplate.measures,
-    legalBasis: expertTemplate.legalBasis,
-    focusPoints: expertTemplate.focusPoints,
-  };
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = data.choices?.[0]?.message?.content || "";
+    const parsed = extractAdvisoryJson(content);
+
+    if (parsed && typeof parsed.direction === "string" && typeof parsed.measures === "string") {
+      const focusPoints = Array.isArray(parsed.focusPoints)
+        ? (parsed.focusPoints as unknown[]).map(String)
+        : expertTemplate.focusPoints;
+
+      return {
+        source: "AI_ENHANCED",
+        direction: parsed.direction,
+        measures: parsed.measures,
+        legalBasis: typeof parsed.legalBasis === "string" ? parsed.legalBasis : expertTemplate.legalBasis,
+        focusPoints,
+        modelName: targetModel,
+      };
+    }
+
+    // JSON 无法解析，降级并说明原因
+    return {
+      source: "EXPERT_RULE",
+      direction: expertTemplate.direction,
+      measures: expertTemplate.measures,
+      legalBasis: expertTemplate.legalBasis,
+      focusPoints: expertTemplate.focusPoints,
+      fallbackReason: "大模型输出格式未匹配结构化规范，已降级为内置专家建议",
+    };
+  } catch (err: unknown) {
+    const isTimeout = err instanceof Error && err.name === "AbortError";
+    return {
+      source: "EXPERT_RULE",
+      direction: expertTemplate.direction,
+      measures: expertTemplate.measures,
+      legalBasis: expertTemplate.legalBasis,
+      focusPoints: expertTemplate.focusPoints,
+      fallbackReason: isTimeout
+        ? "大模型深度推理超时，已无缝降级为内置专家建议"
+        : "大模型调用异常，已无缝降级为内置专家建议",
+    };
+  }
 }

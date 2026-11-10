@@ -538,7 +538,19 @@ export async function generateAdvisoryAction(input: unknown, legacyUseAi?: boole
       return { ok: false, error: "未找到目标线索" };
     }
 
-    const apiKey = process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey =
+      process.env.LLM_API_KEY ||
+      process.env.OPENAI_API_KEY ||
+      process.env.GEMINI_API_KEY;
+    const baseUrl =
+      process.env.LLM_BASE_URL ||
+      process.env.OPENAI_BASE_URL ||
+      "http://token.ai.longjitech.com/v1";
+    const model =
+      process.env.LLM_MODEL ||
+      process.env.OPENAI_MODEL ||
+      "gpt-6-luna";
+
     const advisory = await generateAdvisory(
       {
         type: clue.type,
@@ -547,7 +559,7 @@ export async function generateAdvisoryAction(input: unknown, legacyUseAi?: boole
         region: clue.region,
         amount: clue.amount,
       },
-      { useAi, apiKey }
+      { useAi, apiKey, baseUrl, model }
     );
 
     return { ok: true, advisory };

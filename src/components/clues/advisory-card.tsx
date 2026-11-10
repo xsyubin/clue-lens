@@ -16,7 +16,7 @@ interface AdvisoryCardProps {
 export function AdvisoryCard({ clueId, clueStatus, onAdoptMeasures }: AdvisoryCardProps) {
   const [loading, setLoading] = useState(false);
   const [advisory, setAdvisory] = useState<AdvisoryResult | null>(null);
-  const [useAi, setUseAi] = useState(false);
+  const [useAi, setUseAi] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [adopted, setAdopted] = useState(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
@@ -68,8 +68,17 @@ export function AdvisoryCard({ clueId, clueStatus, onAdoptMeasures }: AdvisoryCa
             双模辅助处置建议
           </h4>
           {advisory && (
-            <Badge variant={advisory.source === "AI_ENHANCED" ? "default" : "secondary"} className="text-[10px]">
-              {advisory.source === "AI_ENHANCED" ? "🤖 AI 深度研判" : "📚 内置专家规则"}
+            <Badge
+              variant={advisory.source === "AI_ENHANCED" ? "default" : "secondary"}
+              className={`text-[10px] ${
+                advisory.source === "AI_ENHANCED"
+                  ? "bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                  : ""
+              }`}
+            >
+              {advisory.source === "AI_ENHANCED"
+                ? `🤖 AI 深度研判${advisory.modelName ? ` (${advisory.modelName})` : ""}`
+                : "📚 内置专家规则"}
             </Badge>
           )}
         </div>
@@ -92,7 +101,13 @@ export function AdvisoryCard({ clueId, clueStatus, onAdoptMeasures }: AdvisoryCa
             disabled={loading}
             className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
           >
-            {loading ? "正在推理分析..." : advisory ? "重新生成建议" : "生成处置建议"}
+            {loading
+              ? useAi
+                ? "AI 深度推理中..."
+                : "正在匹配专家库..."
+              : advisory
+              ? "重新生成建议"
+              : "生成处置建议"}
           </Button>
         </div>
       </div>
@@ -105,6 +120,12 @@ export function AdvisoryCard({ clueId, clueStatus, onAdoptMeasures }: AdvisoryCa
 
       {advisory ? (
         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3 border border-slate-100 dark:border-slate-800">
+          {advisory.fallbackReason && (
+            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-md text-amber-700 dark:text-amber-300 text-xs flex items-start gap-1.5">
+              <span className="text-sm leading-none">⚠️</span>
+              <span>{advisory.fallbackReason}</span>
+            </div>
+          )}
           <div>
             <div className="text-slate-400 font-medium text-[11px]">处置建议主攻方向：</div>
             <div className="font-bold text-sm text-slate-800 dark:text-slate-100 mt-0.5">
