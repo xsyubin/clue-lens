@@ -142,6 +142,26 @@ const DEFAULT_EXPERT_ADVISORY = {
 
 /**
 /**
+ * 清洗大模型输出中的冗余网络引文、追踪链接与 Markdown 脏链接
+ */
+export function cleanAdvisoryText(text: string): string {
+  if (!text) return "";
+  return text
+    // 移除形如 (([domain.com](http...))) 或 ([domain.com](http...))
+    .replace(/[（(]\s*\[.*?\]\(https?:\/\/[^\s)]+\)\s*[）)]/g, "")
+    // 移除普通的 Markdown 链接转换为纯文字：[文字](url) -> 文字
+    .replace(/\[(.*?)\]\(https?:\/\/[^\s)]+\)/g, "$1")
+    // 移除裸 URL 括号：(https://...) 或 （https://...）
+    .replace(/[（(]\s*https?:\/\/[^\s）)]+\s*[）)]/g, "")
+    // 移除普通外部 URL
+    .replace(/https?:\/\/[^\s，。；、\n)]+/g, "")
+    // 清理空括号及无意义残留
+    .replace(/[（(]\s*[）)]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
  * 健壮的 JSON 结构提取器（支持 Markdown 代码块包裹与前后缀文本容错）
  */
 function extractAdvisoryJson(rawText: string): Record<string, unknown> | null {
@@ -225,6 +245,7 @@ export async function generateAdvisory(
 - 涉案金额：￥${clue.amount ?? 0} 元
 
 请根据涉案主体特征、涉案金额与追刑门槛（如涉案金额达到或接近5万元的非法经营追究刑事责任标准），给出专业、针对性强的排查步骤与处置方案。
+注意：请输出规范落地的行政执法表述，严禁包含任何外部 URL 网址链接、utm 追踪参数或网页检索注脚引用（例如 [samr.gov.cn](...)）。
 
 请直接以 JSON 格式输出建议，严禁包裹多余闲聊，包含以下必填字段：
 {
@@ -284,10 +305,12 @@ export async function generateAdvisory(
 
       return {
         source: "AI_ENHANCED",
-        direction: parsed.direction,
-        measures: parsed.measures,
-        legalBasis: typeof parsed.legalBasis === "string" ? parsed.legalBasis : expertTemplate.legalBasis,
-        focusPoints,
+        direction: cleanAdvisoryText(parsed.direction),
+        measures: cleanAdvisoryText(parsed.measures),
+        legalBasis: cleanAdvisoryText(
+          typeof parsed.legalBasis === "string" ? parsed.legalBasis : expertTemplate.legalBasis
+        ),
+        focusPoints: focusPoints.map(cleanAdvisoryText).filter(Boolean),
         modelName: targetModel,
       };
     }

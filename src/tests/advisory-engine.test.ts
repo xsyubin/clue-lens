@@ -1,8 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateAdvisory } from "../lib/advisory-engine";
+import { generateAdvisory, cleanAdvisoryText } from "../lib/advisory-engine";
 
 test("双模辅助处置建议引擎测试 (advisory-engine.ts)", async (t) => {
+  await t.test("文本清洗工具 cleanAdvisoryText 能彻底剔除 URL 与外链脚注", () => {
+    const dirty =
+      "对城南区开展核查。([samr.gov.cn](https://www.samr.gov.cn/art_3?utm_source=openai)) 依据[市场监管法条](https://gov.cn)依法处理。";
+    const cleaned = cleanAdvisoryText(dirty);
+    assert.ok(!cleaned.includes("https://"));
+    assert.ok(!cleaned.includes("samr.gov.cn"));
+    assert.ok(!cleaned.includes("utm_source"));
+    assert.ok(cleaned.includes("依据市场监管法条依法处理"));
+  });
   const sampleClue = {
     targetName: "越秀区老王便利店",
     region: "越秀区",
