@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # scripts/demo/lib/common.sh
-# 教学演示公共辅助库：ANSI 颜色排版、三幕式画框、交互控制
+# 教学演示公共辅助库：ANSI 颜色排版、三幕式画框、交互控制、真实命令执行
 # ==============================================================================
 
 # 自动定位工程根目录
@@ -53,16 +53,16 @@ demo_step() {
   echo -e "${BLUE}👉 [步骤说明]${RESET} ${text}"
 }
 
-# 打印模拟过程
-demo_simulate() {
-  local text="$1"
-  echo -e "${YELLOW}⚡ [模拟执行]${RESET} ${DIM}${text}${RESET}"
-}
-
 # 打印真实命令
 demo_run() {
   local text="$1"
-  echo -e "${MAGENTA}🚀 [真实命令]${RESET} ${BOLD}${text}${RESET}"
+  echo -e "${MAGENTA}🚀 [真实执行]${RESET} ${BOLD}${text}${RESET}"
+}
+
+# 打印现场调用 AI (agy)
+demo_ai() {
+  local prompt="$1"
+  echo -e "${CYAN}🤖 [Live AI · agy]${RESET} ${DIM}\"${prompt}\"${RESET}"
 }
 
 # 打印警告 / 翻车提示

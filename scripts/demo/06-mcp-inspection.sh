@@ -1,34 +1,39 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # scripts/demo/06-mcp-inspection.sh
-# 场景六：【企业集成】数据库字段幻觉 vs 受控 MCP + RBAC 越权拦截
+# 场景六：【企业集成】数据库字段幻觉 vs 受控 MCP + RBAC 越权拦截 (100% 真实执行版)
 # ==============================================================================
 source "$(dirname "$0")/lib/common.sh"
 
 demo_header "06" "受控企业数据集成 —— 数据库盲人摸象 vs 受控 MCP + RBAC 越权拦截" "板块五：5.1~5.3 MCP 原理、自建 Schema MCP 与 RBAC 审计存证"
 
 # ------------------------------------------------------------------------------
-# 第 1 幕：红屏警报 —— 盲人摸象的字段幻觉与直接 SQL 裸奔
+# 第 1 幕：红屏警报 —— 现场触发真实 SQLite 字段幻觉报错
 # ------------------------------------------------------------------------------
-demo_act "1" "野生裸奔：AI 凭空脑补字段与直接连接数据库的高危事故" "$RED"
-demo_step "模拟让 AI 编写持久层查询，但未向其提供受控元数据接口..."
+demo_act "1" "野生裸奔：现场执行 AI 脑补字段的查询，触发真实数据库报错" "$RED"
+demo_step "现场用 SQLite 执行一条包含 AI 幻觉字段的 SQL (将 customer_phone 脑补为 mobile，intent_score 脑补为 score)..."
 
-demo_simulate "AI 正在生成专卖线索查询 SQL..."
-sleep 0.8
+demo_run "node -e \"
+  const Database = require('better-sqlite3');
+  const db = new Database('${ROOT_DIR}/data/app.db');
+  try {
+    db.prepare('SELECT id, mobile, score FROM clues').all();
+  } catch (err) {
+    console.error('💥 真实 SQLite 物理报错: ' + err.message);
+  }
+\""
+node -e "
+  const Database = require('better-sqlite3');
+  const db = new Database('${ROOT_DIR}/data/app.db');
+  try {
+    db.prepare('SELECT id, mobile, score FROM clues').all();
+  } catch (err) {
+    console.error('💥 真实 SQLite 物理报错: ' + err.message);
+  }
+"
 
-echo -e "${RED}
-[终端致命报错回显]:
-------------------------------------------------------------------------
-// ❌ 灾难 1 [字段幻觉]：AI 脑补了列名，数据库根本没有这些字段！
-SELECT id, mobile, score, company_name FROM clues;
---> Error: SQLite3 error: no such column: mobile (真实字段为 customer_phone)
---> Error: SQLite3 error: no such column: score (真实字段为 intent_score)
-
-// ❌ 灾难 2 [权限与操作失控]：
-Agent 获得命令行数据库直连权限后，试图修复表结构：
-DROP TABLE clues; -- 生产数据被一键清空！
-------------------------------------------------------------------------${RESET}"
-demo_fail "致命真相：给 AI 终端裸奔直连数据库是安全自杀！而完全不给元数据则是质量残疾！"
+echo ""
+demo_fail "致命真相：在没有受控元数据接口时，大模型必然凭空猜测字段名，导致运行时严重崩溃！而如果直接赋予其命令行直连权限，测试库/生产库面临删库删表的灭顶之灾！"
 
 demo_pause
 
@@ -41,7 +46,7 @@ demo_run "cat ${ROOT_DIR}/.mcp.json"
 cat "${ROOT_DIR}/.mcp.json"
 
 echo ""
-demo_step "运行 MCP 契约与安全全项验证客户端 (执行 11 项端到端验证)..."
+demo_step "运行 MCP 契约与安全全项验证客户端 (真实执行 11 项端到端握手与安全验证)..."
 demo_run "node ${ROOT_DIR}/scripts/mcp/test-client.mjs"
 node "${ROOT_DIR}/scripts/mcp/test-client.mjs"
 

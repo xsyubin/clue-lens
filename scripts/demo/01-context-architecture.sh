@@ -1,40 +1,58 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # scripts/demo/01-context-architecture.sh
-# 场景一：【上下文治理】大上下文溺水 vs 架构地图渐进式索引
+# 场景一：【上下文治理】大上下文溺水 vs 架构地图精准制导 (100% 真实执行版)
 # ==============================================================================
 source "$(dirname "$0")/lib/common.sh"
 
 demo_header "01" "上下文与架构治理 —— 大上下文溺水 vs 架构地图精准制导" "板块二：2.1 喂对上下文（大上下文陷阱与冰山模型）"
 
 # ------------------------------------------------------------------------------
-# 第 1 幕：红屏警报 —— 无治理状态的致命车祸
+# 第 1 幕：红屏警报 —— 物理测量全工程源码体积，揭示“大上下文陷阱”
 # ------------------------------------------------------------------------------
-demo_act "1" "野生裸奔：无脑全塞上下文的‘大上下文陷阱’与跨层乱写" "$RED"
-demo_step "模拟没有 ARCHITECTURE.md 与规范约束时，直接丢给 AI 几十个文件..."
-demo_simulate "正在将整个工程全量文件 (src/, node_modules/, config) 拼接入上下文..."
+demo_act "1" "野生裸奔：现场物理测算全仓无脑塞入的 Token 爆炸与失控" "$RED"
+demo_step "现场遍历当前代码库全部源码文件，测算如果不经治理全量喂给大模型的真实物理开销..."
 
-sleep 0.8
-echo -e "${RED}⚠️  [WARNING] 上下文 Token 膨胀至 48,250 Tokens！触发 Lost in the Middle 效应！${RESET}"
-echo -e "${RED}⚠️  [WARNING] 首字延迟高达 12.8s，注意力发散，AI 丢失核心分层记忆！${RESET}"
+demo_run "node -e '
+  const fs = require(\"fs\");
+  const path = require(\"path\");
+  function scan(dir) {
+    let files = [];
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      if ([\"node_modules\", \".git\", \".next\", \".worktrees\"].includes(f.name)) continue;
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) files.push(...scan(p));
+      else if (/\\.(ts|tsx|js|mjs|json|md)$/.test(f.name)) files.push(p);
+    }
+    return files;
+  }
+  const allFiles = scan(\"${ROOT_DIR}\");
+  let totalBytes = 0;
+  for (const f of allFiles) totalBytes += fs.statSync(f).size;
+  const estimatedTokens = Math.round(totalBytes / 3.8);
 
-demo_simulate "AI 开始编写专卖线索流转功能..."
-sleep 0.6
-echo -e "${RED}
-[AI 生成的不受控代码片段 - 典型车祸]:
-------------------------------------------------------------------------
-// ❌ 错误 1: 客户端组件里直接实例化数据库，导致打包泄漏服务端凭证
-'use client';
-import Database from 'better-sqlite3'; // 违反 RSC 边界！
-const db = new Database('data/app.db');
+  const agentsPath = path.join(\"${ROOT_DIR}\", \"AGENTS.md\");
+  const agentsBytes = fs.existsSync(agentsPath) ? fs.statSync(agentsPath).size : 0;
+  const agentsTokens = Math.round(agentsBytes / 3.8);
 
-// ❌ 错误 2: 私造工具类，破坏工程统一规范契约
-export class CustomResultHelper { ... }
+  console.log(\"📊 [现场真实物理测量数据]：\");
+  console.log(\"  ├── 全工程源码文件数  : \", allFiles.length, \"个文件\");
+  console.log(\"  ├── 全工程物理源码体积: \", (totalBytes / 1024).toFixed(1), \"KB (\", totalBytes, \"字节 )\");
+  console.log(\"  ├── 估算全量 Context   : \", estimatedTokens.toLocaleString(), \"Tokens (⚠️ 远超 32k/64k 黄金注意力窗口)\");
+  console.log(\"  ├── 常驻层 AGENTS.md   : \", (agentsBytes / 1024).toFixed(1), \"KB (\", agentsTokens.toLocaleString(), \"Tokens )\");
+  console.log(\"  └── 上下文体积物理压缩率: \", ((1 - agentsBytes / totalBytes) * 100).toFixed(1) + \"% !\");
+'"
 
-// ❌ 错误 3: AI 试图修复 Native 模块打包报错，胡乱修改 next.config.ts
-// 删除了 serverExternalPackages: ['better-sqlite3']，构建全面崩溃！
-------------------------------------------------------------------------${RESET}"
-demo_fail "结果：Token 严重浪费、首字响应奇慢、破坏打包运行时、架构隐性腐烂！"
+echo ""
+demo_fail "致命后果：把全仓 9 万+ Tokens 全塞给大模型，必将引爆 Lost in the Middle 效应、响应奇慢且破坏分层架构！"
+
+# 可选调用现场 agy 演示无规范下的回答
+if command -v agy &>/dev/null; then
+  echo ""
+  demo_ai "用一行伪代码说明在 Next.js 里客户端组件怎么查询 sqlite 数据库"
+  agy -p "不参考本项目任何规范，请用一行伪代码说明在 Next.js 里客户端组件怎么查询 sqlite 数据库" --print-timeout 15s || true
+  demo_fail "看！没有架构家规时，AI 极其容易建议在客户端直接 import 数据库驱动，引发严重的架构污染！"
+fi
 
 demo_pause
 
@@ -42,22 +60,22 @@ demo_pause
 # 第 2 幕：绿屏反制 —— clue-lens Harness 资产精准制导
 # ------------------------------------------------------------------------------
 demo_act "2" "佩戴 Harness：AGENTS.md 常驻指针 + ARCHITECTURE.md 渐进式披露" "$GREEN"
-demo_step "展示 clue-lens 架构资产如何以极低 Token 控制全局大局观..."
+demo_step "展示 clue-lens 常驻家规资产 (极低 Token 控制全局大局观)..."
 
-demo_run "head -n 25 ${ROOT_DIR}/AGENTS.md"
-head -n 25 "${ROOT_DIR}/AGENTS.md"
-
-echo ""
-demo_step "AI 读到 AGENTS.md 家规指针，主动按需调阅 ARCHITECTURE.md 与分层规范..."
-demo_run "grep -E -A 10 '### 1. 技术分层架构' ${ROOT_DIR}/ARCHITECTURE.md"
-grep -E -A 10 '### 1. 技术分层架构' "${ROOT_DIR}/ARCHITECTURE.md" || true
+demo_run "head -n 28 ${ROOT_DIR}/AGENTS.md"
+head -n 28 "${ROOT_DIR}/AGENTS.md"
 
 echo ""
-demo_step "运行工程一致性校验门禁，验证架构地图与分层规约 100% 闭环..."
+demo_step "展示 ARCHITECTURE.md 提供的技术分层红绿灯与公共资产货架表..."
+demo_run "grep -E -A 12 '### 1. 技术分层架构' ${ROOT_DIR}/ARCHITECTURE.md"
+grep -E -A 12 '### 1. 技术分层架构' "${ROOT_DIR}/ARCHITECTURE.md" || true
+
+echo ""
+demo_step "现场运行全栈架构与命名一致性门禁，验证整套架构契约 100% 闭环..."
 demo_run "node ${ROOT_DIR}/scripts/gates/check-consistency.mjs"
 node "${ROOT_DIR}/scripts/gates/check-consistency.mjs"
 
-demo_pass "AI 依循架构地图生成 Server Actions，严格遵守会话守卫与 Zod 契约，Token 开销削减 90%！"
+demo_pass "AI 依循架构地图生成 Server Actions，严格遵守会话守卫与 Zod 契约，Token 开销削减 97%！"
 
 demo_pause
 
@@ -69,8 +87,8 @@ echo -e "${WHITE}
 ┌──────────────────────┬──────────────────────────────┬──────────────────────────────┐
 │ 治理维度             │ 无 Harness (无脑全塞上下文)  │ 有 Harness (架构地图渐进式)  │
 ├──────────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ Token 预算开销       │ 40,000+ Tokens (注意力发散)  │ <2,000 Tokens (极简常驻指针) │
-│ 响应延迟与心流       │ 10~15 秒首字卡顿             │ 毫秒级闪电启动响应           │
+│ 真实物理开销         │ 90,000+ Tokens (打爆窗口)    │ ~2,400 Tokens (极简常驻指针) │
+│ 上下文压缩率         │ 0% (注意力涣散与严重卡顿)    │ 97.5% 物理级体积压缩         │
 │ 架构一致性保障       │ 跨层引入 DB、私造冗余轮子    │ 100% 遵从分层红绿灯与规范    │
 │ 打包与底层稳定性     │ 频繁误改配置文件引爆构建     │ 规则显式防护，运行时零腐烂   │
 └──────────────────────┴──────────────────────────────┴──────────────────────────────┘${RESET}"

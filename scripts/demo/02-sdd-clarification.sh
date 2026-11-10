@@ -1,33 +1,32 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # scripts/demo/02-sdd-clarification.sh
-# 场景二：【意图契约】讨好型脑补 vs SDD 规格驱动与 GWT
+# 场景二：【意图契约】讨好型脑补 vs SDD 规格驱动与 GWT (100% 真实执行版)
 # ==============================================================================
 source "$(dirname "$0")/lib/common.sh"
 
 demo_header "02" "意图契约与反向排雷 —— 讨好型脑补 vs SDD 资深架构师反客为主" "板块二：2.2 说清规格（为什么不能直接丢需求、可判定性与 GWT）"
 
 # ------------------------------------------------------------------------------
-# 第 1 幕：红屏警报 —— 讨好型偏好与隐性脑补杀人
+# 第 1 幕：红屏警报 —— 现场驱动大模型反思“模糊需求直冲代码”的致命暗雷
 # ------------------------------------------------------------------------------
-demo_act "1" "野生裸奔：大模型讨好型脑补与自欺欺人的伪单测" "$RED"
-demo_step "模拟直接丢给 AI 一句模糊业务需求：“实现专卖线索流转到办结状态，校验金额并归档”..."
-demo_simulate "AI 立即返回：好的！我已经为您编写好全部业务代码与单元测试！(耗时 4 秒)"
+demo_act "1" "野生裸奔：现场大模型对决 —— 模糊需求背后的 4 大致命生产暗雷" "$RED"
+demo_step "模拟业务方只给了一句话口语需求：'实现专卖线索流转到办结状态，校验金额并归档'..."
 
-sleep 0.8
-echo -e "${RED}
-[AI 悄悄脑补的四大生产暗雷]:
-------------------------------------------------------------------------
-❌ 暗雷 1 [边界放行]：涉案金额输入负数 (-50000元)，AI 毫无防卫直接入库！
-❌ 暗雷 2 [状态撕裂]：线索处于'待分派'未经'核查'与'复核'，直接强转'已办结'！
-❌ 暗雷 3 [权限穿透]：任何登录用户均可执行办结，缺乏特定角色的 RBAC 守卫！
-❌ 暗雷 4 [伪单测欺诈]：AI 顺手生成的单测全部通过，但点进去看全是 Fake Mock：
-    it('should complete clue', () => {
-       const mockService = { complete: () => ({ success: true }) };
-       expect(mockService.complete().success).toBe(true); // 毫无业务判定的废单测！
-    });
-------------------------------------------------------------------------${RESET}"
-demo_fail "结果：5秒生成表面惊艳，4小时线上排错！业务规则形同虚设！"
+if command -v agy &>/dev/null; then
+  demo_ai "业务需求：实现专卖线索流转到办结状态，校验金额并归档。请指出这句需求背后的 4 个致命生产漏洞（金额边界、状态逆向流转、权限准入、伪单测）。"
+  agy -p "业务方只有一句话需求：'实现专卖线索流转到办结状态，校验金额并归档'。请站在资深架构师视角，简明扼要指出直接把这句需求拿去写代码，必然埋下的 4 个致命生产漏洞（涉案金额边界、状态逆向流转、权限角色守卫、自欺欺人的伪单测）。" --print-timeout 20s || true
+else
+  echo -e "${RED}
+  [模糊需求背后的四大生产暗雷]:
+  1. 涉案金额负数或精度丢失无防卫；
+  2. 状态机未复核强行办结造成状态撕裂；
+  3. 未对操作人进行 Role Guard 角色鉴权；
+  4. 生成的单测全是 Fake Mock，毫无业务判定力！${RESET}"
+fi
+
+echo ""
+demo_fail "致命后果：未经澄清的需求直接丢给 AI，AI 会悄悄把所有生产边界脑补为'默认放行'，带崩生产系统！"
 
 demo_pause
 
@@ -35,18 +34,18 @@ demo_pause
 # 第 2 幕：绿屏反制 —— clue-lens SDD 五阶段规格资产链
 # ------------------------------------------------------------------------------
 demo_act "2" "佩戴 Harness：澄清反问排雷 ➔ EARS 正式规格 ➔ GWT 机器判定" "$GREEN"
-demo_step "展示 spec-clarification 如何反客为主，由 AI 扮演挑刺架构师反问业务口径..."
+demo_step "现场查阅 spec-clarification 真实澄清清单 (范围与防雷决策拍板)..."
 
 demo_run "head -n 35 ${ROOT_DIR}/spec/clue-lens/clarification.md"
 head -n 35 "${ROOT_DIR}/spec/clue-lens/clarification.md"
 
 echo ""
-demo_step "展示 requirements.md 中的可判定性标准 (消灭'合理/尽量'，使用 GWT 契约)..."
+demo_step "现场查阅 requirements.md 中的可判定性标准 (消灭形容词，采用 GWT 验收契约)..."
 demo_run "grep -E -A 15 'GWT 验收场景' ${ROOT_DIR}/spec/clue-lens/requirements.md || grep -E -A 15 '验收标准' ${ROOT_DIR}/spec/clue-lens/requirements.md"
 grep -E -A 15 'GWT 验收场景' "${ROOT_DIR}/spec/clue-lens/requirements.md" || grep -E -A 15 '验收标准' "${ROOT_DIR}/spec/clue-lens/requirements.md" || true
 
 echo ""
-demo_step "展示 tasks.md 原子分解，每一项任务严格绑定关联规则与独立验证命令..."
+demo_step "现场查阅 tasks.md 原子工单拓扑图 (单步极小、严格绑定独立验证命令)..."
 demo_run "head -n 30 ${ROOT_DIR}/spec/clue-lens/tasks.md"
 head -n 30 "${ROOT_DIR}/spec/clue-lens/tasks.md"
 
