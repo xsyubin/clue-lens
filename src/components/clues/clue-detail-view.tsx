@@ -128,9 +128,9 @@ export function ClueDetailView({ clue, timeline }: ClueDetailViewProps) {
       </div>
 
       {/* 核心两列布局：左侧信息与工作流，右侧处置建议与时间轴 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
         {/* 左侧 2 列：线索基础信息与办理操作 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* 基础档案卡片 */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-5">
             <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -334,7 +334,7 @@ export function ClueDetailView({ clue, timeline }: ClueDetailViewProps) {
         </div>
 
         {/* 右侧 1 列：处置建议与流转时间轴 */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* 双模建议卡片 */}
           <AdvisoryCard
             clueId={clue.id}

@@ -141,24 +141,44 @@ const DEFAULT_EXPERT_ADVISORY = {
 };
 
 /**
-/**
- * 清洗大模型输出中的冗余网络引文、追踪链接与 Markdown 脏链接
+ * 清洗大模型输出中的冗余网络引文、追踪链接与 Markdown 脏链接，确保纯文本且无任何断行撑爆
  */
 export function cleanAdvisoryText(text: string): string {
   if (!text) return "";
-  return text
-    // 移除形如 (([domain.com](http...))) 或 ([domain.com](http...))
-    .replace(/[（(]\s*\[.*?\]\(https?:\/\/[^\s)]+\)\s*[）)]/g, "")
-    // 移除普通的 Markdown 链接转换为纯文字：[文字](url) -> 文字
-    .replace(/\[(.*?)\]\(https?:\/\/[^\s)]+\)/g, "$1")
-    // 移除裸 URL 括号：(https://...) 或 （https://...）
-    .replace(/[（(]\s*https?:\/\/[^\s）)]+\s*[）)]/g, "")
-    // 移除普通外部 URL
-    .replace(/https?:\/\/[^\s，。；、\n)]+/g, "")
-    // 清理空括号及无意义残留
-    .replace(/[（(]\s*[）)]/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  let res = text;
+
+  // 1. 匹配带外层括号的 Markdown 链接，如 ([samr.gov.cn](http...)) 或 （[samr.gov.cn]\n(http...)）
+  res = res.replace(/[（(]\s*\[.*?\]\s*\(https?:\/\/[^)]+\)\s*[）)]/gis, "");
+
+  // 2. 匹配普通的 Markdown 链接 [文字](http...)
+  res = res.replace(/\[(.*?)\]\s*\(https?:\/\/[^)]+\)/gis, (match, anchor) => {
+    const trimmed = anchor.trim();
+    // 如果文字本身就是域名、无意义引用或纯数字，直接剔除；否则保留文字
+    if (/^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed) || /^\d+$/.test(trimmed)) {
+      return "";
+    }
+    return trimmed;
+  });
+
+  // 3. 匹配带有括号的独立 URL：(https://...) 或 （https://...）
+  res = res.replace(/[（(]\s*https?:\/\/[^\s）)]+\s*[）)]/gis, "");
+
+  // 4. 匹配任何残余的裸 URL
+  res = res.replace(/https?:\/\/[^\s，。；、\n)）\]]+/gi, "");
+
+  // 5. 匹配残余的引文注脚，如 [samr.gov.cn]、[1]、([samr.gov.cn])
+  res = res.replace(/[（(]\s*\[?[a-z0-9.-]+\.[a-z]{2,}\]?\s*[）)]/gis, "");
+  res = res.replace(/\[\s*([a-z0-9.-]+\.[a-z]{2,}|\d+)\s*\]/gi, "");
+
+  // 6. 清理空括号及无意义符号残余
+  res = res.replace(/[（(]\s*[）)]/g, "");
+  res = res.replace(/\[\s*\]/g, "");
+
+  // 7. 清理中文标点前的多余空格和多重空格
+  res = res.replace(/\s+([，。；：！？])/g, "$1");
+  res = res.replace(/[ \t]{2,}/g, " ");
+
+  return res.trim();
 }
 
 /**
@@ -245,13 +265,15 @@ export async function generateAdvisory(
 - 涉案金额：￥${clue.amount ?? 0} 元
 
 请根据涉案主体特征、涉案金额与追刑门槛（如涉案金额达到或接近5万元的非法经营追究刑事责任标准），给出专业、针对性强的排查步骤与处置方案。
-注意：请输出规范落地的行政执法表述，严禁包含任何外部 URL 网址链接、utm 追踪参数或网页检索注脚引用（例如 [samr.gov.cn](...)）。
+排查步骤与格式硬性要求：
+1. 请输出具体清晰的 2 至 4 项排查与处置举措，每项举措必须换行并以数字序号标识（例如 "1. "、"2. "、"3. "）；
+2. 严禁包含任何外部 URL 网址链接、utm 追踪参数、网页检索注脚引用（例如 [samr.gov.cn](...)、(http...) 等），必须为纯文本表述。
 
 请直接以 JSON 格式输出建议，严禁包裹多余闲聊，包含以下必填字段：
 {
-  "direction": "处置主攻方向（精炼说明当前首要处置策略与重心）",
-  "measures": "具体1、2、3条处置措施（结合具体经营主体和涉案金额排查）",
-  "legalBasis": "具体法律法规依据（法条全称与具体款项）",
+  "direction": "处置主攻方向（精炼说明当前首要处置策略与重心，纯文本无链接）",
+  "measures": "1. 第一项排查措施\\n2. 第二项排查措施\\n3. 第三项处置举措",
+  "legalBasis": "具体法律法规依据（法条全称与具体款项，纯文本无链接）",
   "focusPoints": ["排查重点1", "排查重点2"]
 }`;
 

@@ -3,14 +3,29 @@ import assert from "node:assert/strict";
 import { generateAdvisory, cleanAdvisoryText } from "../lib/advisory-engine";
 
 test("双模辅助处置建议引擎测试 (advisory-engine.ts)", async (t) => {
-  await t.test("文本清洗工具 cleanAdvisoryText 能彻底剔除 URL 与外链脚注", () => {
-    const dirty =
+  await t.test("文本清洗工具 cleanAdvisoryText 能彻底剔除换行 URL、嵌套括号与外链注脚", () => {
+    const dirty1 =
       "对城南区开展核查。([samr.gov.cn](https://www.samr.gov.cn/art_3?utm_source=openai)) 依据[市场监管法条](https://gov.cn)依法处理。";
-    const cleaned = cleanAdvisoryText(dirty);
-    assert.ok(!cleaned.includes("https://"));
-    assert.ok(!cleaned.includes("samr.gov.cn"));
-    assert.ok(!cleaned.includes("utm_source"));
-    assert.ok(cleaned.includes("依据市场监管法条依法处理"));
+    const cleaned1 = cleanAdvisoryText(dirty1);
+    assert.ok(!cleaned1.includes("https://"));
+    assert.ok(!cleaned1.includes("samr.gov.cn"));
+    assert.ok(!cleaned1.includes("utm_source"));
+    assert.ok(cleaned1.includes("依据市场监管法条依法处理"));
+
+    // 测试带换行与双括号的复杂脏引文（来自大模型真实输出）
+    const dirty2 =
+      "销售，不认定违法或涉嫌犯罪。([samr.gov.cn]\n(https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/jls/art/2023/art_3da9131ab041449d9af2af886ee33766.html?utm_source=openai))";
+    const cleaned2 = cleanAdvisoryText(dirty2);
+    assert.strictEqual(cleaned2, "销售，不认定违法或涉嫌犯罪。");
+
+    // 测试未断行的长链接与句中引文
+    const dirty3 =
+      "依法处理。([samr.gov.cn]\n(https://www.samr.gov.cn/zw/zfxxgk/fdzdgknr/bgt/art/2023/art_4882f33442244df5bd570219964612b7.html))\n3. 分类处置";
+    const cleaned3 = cleanAdvisoryText(dirty3);
+    assert.ok(!cleaned3.includes("http"));
+    assert.ok(!cleaned3.includes("samr.gov.cn"));
+    assert.ok(cleaned3.includes("依法处理。"));
+    assert.ok(cleaned3.includes("3. 分类处置"));
   });
   const sampleClue = {
     targetName: "越秀区老王便利店",
