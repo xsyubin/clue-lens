@@ -117,15 +117,41 @@ run_command() {
 }
 
 check_results=()
+check_failures=0
 run_single_check() {
     local chk="$1"
     echo ">>> [AGENT-CHECK] 正在执行声明检查: ${chk}"
     local res="PASS"
     case "$chk" in
         "markdown-links")
-            if git -C "$WORKTREE" status >/dev/null 2>&1; then
-                res="PASS"
-            fi
+            node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const targets = ['spec/clue-lens/requirements.md', 'spec/clue-lens/design.md', 'spec/clue-lens/tasks.md', 'README.md', 'ARCHITECTURE.md'];
+            let fail = false;
+            for (const file of targets) {
+              const fullPath = path.join('$WORKTREE', file);
+              if (!fs.existsSync(fullPath)) continue;
+              const content = fs.readFileSync(fullPath, 'utf8');
+              const linkRegex = /\[.*?\]\((?!https?:\/\/|mailto:|#)(.*?)\)/g;
+              let m;
+              while ((m = linkRegex.exec(content)) !== null) {
+                let linkTarget = m[1].split('#')[0].trim();
+                if (!linkTarget) continue;
+                let resolved;
+                if (linkTarget.startsWith('file://')) {
+                  try { resolved = new URL(linkTarget).pathname; } catch { resolved = linkTarget.replace(/^file:\/\//, ''); }
+                } else {
+                  resolved = path.resolve(path.dirname(fullPath), linkTarget);
+                }
+                if (!fs.existsSync(resolved)) {
+                  console.error('❌ [MARKDOWN-LINKS] 发现死链:', file, '->', linkTarget);
+                  fail = true;
+                }
+              }
+            }
+            if (fail) process.exit(1);
+            " || res="FAIL"
             ;;
         "spec-consistency")
             if [[ -f "$WORKTREE/spec/clue-lens/requirements.md" && -f "$WORKTREE/spec/clue-lens/design.md" && -f "$WORKTREE/spec/clue-lens/tasks.md" ]]; then
@@ -137,31 +163,33 @@ run_single_check() {
         "typecheck")
             (cd "$WORKTREE" && npm run typecheck) || res="FAIL"
             ;;
-        "static-security-check")
+        "check-security" | "static-security-check")
             (cd "$WORKTREE" && ./scripts/gates/check-security.sh) || res="FAIL"
             ;;
         "check-consistency")
             (cd "$WORKTREE" && ./scripts/gates/check-consistency.sh) || res="FAIL"
             ;;
-        "secret-scan")
+        "check-secrets" | "secret-scan")
             (cd "$WORKTREE" && ./scripts/gates/check-secrets.sh) || res="FAIL"
             ;;
         "check-mcp")
             (cd "$WORKTREE" && ./scripts/gates/check-mcp.sh) || res="FAIL"
             ;;
-        "deterministic-review")
+        "review" | "deterministic-review")
             (cd "$WORKTREE" && ./scripts/review.sh) || res="FAIL"
             ;;
         *)
-            echo "⚠️ [AGENT-CHECK] 未知检查项: $chk"
-            res="PASS"
+            echo "❌ [AGENT-CHECK] 未知或未配置的检查项: $chk" >&2
+            res="FAIL"
             ;;
     esac
 
     if [[ "$res" == "PASS" ]]; then
         check_results+=("PASS|${chk}|通过")
+        return 0
     else
         check_results+=("FAIL|${chk}|未通过")
+        check_failures=$((check_failures + 1))
         echo "❌ [AGENT-CHECK] 检查项失败: ${chk}" >&2
         return 1
     fi
@@ -188,7 +216,7 @@ if [[ "$RUN_COMMANDS" -eq 1 ]]; then
     if [[ -n "$checks" ]]; then
         IFS=',' read -ra check_items <<< "$checks"
         for chk in "${check_items[@]}"; do
-            run_single_check "$(strip_item "$chk")"
+            run_single_check "$(strip_item "$chk")" || true
         done
     fi
 fi
@@ -222,11 +250,6 @@ while IFS= read -r file; do
     fi
 done <<< "$changed_files"
 
-if [[ "$violations" -gt 0 ]]; then
-    echo "[AGENT-RUN] 路径门禁失败；保留 worktree：$WORKTREE" >&2
-    exit 1
-fi
-
 # 生成角色执行审计证据 (evidence/agent-runs/<name>/<role>.md)
 EVIDENCE_DIR="${ROOT}/evidence/agent-runs/${NAME}"
 mkdir -p "${EVIDENCE_DIR}"
@@ -240,7 +263,7 @@ EVIDENCE_FILE="${EVIDENCE_DIR}/${ROLE}.md"
     echo "- **角色目标**: ${objective}"
     echo "- **执行时间**: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "- **隔离工作区**: \`${WORKTREE}\`"
-    echo "- **门禁判定**: $([[ "${violations}" -eq 0 ]] && echo "🟢 合规通过" || echo "🔴 违规拦截")"
+    echo "- **门禁判定**: $([[ "${violations}" -eq 0 && "${check_failures}" -eq 0 ]] && echo "🟢 合规通过" || echo "🔴 违规拦截")"
     echo
     echo "## 声明检查项验证结果 (Checks)"
     echo
@@ -283,4 +306,9 @@ if [[ "$CLEANUP" -eq 1 ]]; then
     WORKTREE_PARENT="$PARENT" "$ROOT/scripts/agent/worktree.sh" drop "$NAME"
 else
     echo "[AGENT-RUN] 运行完成，worktree 保留：$WORKTREE"
+fi
+
+if [[ "${violations}" -gt 0 || "${check_failures}" -gt 0 ]]; then
+    echo "❌ [AGENT-RUN] 角色审计未通过（违规变更: ${violations}, 失败检查: ${check_failures}）！" >&2
+    exit 1
 fi

@@ -50,6 +50,18 @@ while IFS= read -r role; do
         printf '%s\n' "${block}" | grep -q "^    ${field}:" \
             || fail "角色 ${role} 缺少 ${field}"
     done
+
+    # 校验声明的 checks 是否已在 agent-run.sh 中得到支持，防止契约漂移与静默空转
+    SUPPORTED_CHECKS="markdown-links spec-consistency typecheck check-security static-security-check check-consistency check-secrets secret-scan check-mcp review deterministic-review"
+    checks_line="$(printf '%s\n' "${block}" | grep '^    checks:' | sed -E 's/^    checks:[[:space:]]*\[?//' | tr -d '[]"'\''')"
+    IFS=',' read -ra chk_arr <<< "${checks_line}"
+    for chk in "${chk_arr[@]}"; do
+        chk_clean="$(echo "${chk}" | tr -d '[:space:]')"
+        [[ -z "${chk_clean}" ]] && continue
+        if [[ ! " ${SUPPORTED_CHECKS} " =~ " ${chk_clean} " ]]; then
+            fail "角色 ${role} 声明了 agent-run.sh 不支持的检查项: ${chk_clean}"
+        fi
+    done
 done <<< "${role_ids}"
 
 if [[ "${failures}" -gt 0 ]]; then

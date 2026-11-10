@@ -107,6 +107,8 @@ check_content_contains ".mcp.json" "clue-mcp-server" "MCP 服务配置 clue-mcp-
 
 echo "--- 7. SDD 技能库与智能体契约检查 (.agents) ---"
 check_file_exists ".agents/agent-manifest.yml"
+check_file_exists ".agents/hooks.json"
+check_file_exists ".claude/settings.json"
 check_file_exists ".agents/skills/WORKFLOW.md"
 check_file_exists ".agents/skills/spec-clarification/SKILL.md"
 check_file_exists ".agents/skills/spec-requirements/SKILL.md"
@@ -118,6 +120,9 @@ check_file_exists "scripts/gates/check-manifest.sh"
 check_file_exists "scripts/agent/agent-run.sh"
 check_file_exists "scripts/agent/worktree.sh"
 check_file_exists "scripts/agent/worktree.mjs"
+check_file_exists "scripts/agent/pre-tool-guard.sh"
+check_file_exists "scripts/agent/pre-tool-guard.mjs"
+check_content_contains ".claude/settings.json" "pre-tool-guard.sh" "Claude Code PreToolUse Hook 配置"
 
 echo "=================================================================="
 if [ "${FAILURES}" -gt 0 ]; then
