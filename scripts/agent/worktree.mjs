@@ -65,7 +65,7 @@ try {
 
 const parentDir = process.env.WORKTREE_PARENT
   ? path.resolve(process.env.WORKTREE_PARENT)
-  : path.resolve(mainRoot, "..", ".worktrees");
+  : path.resolve(mainRoot, ".worktrees");
 
 const wtDir = path.join(parentDir, `clue-lens-${slug}`);
 const branch = `agent/${slug}`;

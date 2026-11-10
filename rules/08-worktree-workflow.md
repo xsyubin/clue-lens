@@ -14,12 +14,12 @@ alwaysApply: true
 操作流程严格固定为三步，机械步骤全部由 `scripts/agent/worktree.sh` 驱动：
 
 1. **开（New）**：`./scripts/agent/worktree.sh new <slug>`
-   - 自动拉出分支 `agent/<slug>`，并创建工作目录 `../.worktrees/clue-lens-<slug>`；
+   - 自动拉出分支 `agent/<slug>`，并创建工作目录 `.worktrees/clue-lens-<slug>`；
    - 自动软链主工程的 `node_modules`，免去重复安装依赖；
    - 自动克隆独立私有的 SQLite 沙盒数据库 `data/app.db`，从物理层杜绝并发锁死与污染；
    - 自动同步 `.env` 环境配置。
 2. **改 + 测（Dev & Test）**：
-   - 所有的代码编辑（`edit_file` / `write_file`）、编译与测试运行，**一律在 `../.worktrees/clue-lens-<slug>/` 路径下执行**；
+   - 所有的代码编辑（`edit_file` / `write_file`）、编译与测试运行，**一律在 `.worktrees/clue-lens-<slug>/` 路径下执行**；
    - 保证所有单元测试、RBAC 鉴权测试和 GWT 场景测试在 worktree 内通过并完成原子化提交（`git commit`）。
 3. **合（Merge）**：
    - 验证全部通过后，在主工程或 worktree 中运行 `./scripts/agent/worktree.sh merge <slug>`；
@@ -33,7 +33,7 @@ alwaysApply: true
 ## 2. 智能体行为与避坑守则
 
 - **路径边界红线**：
-  执行 `new` 之后，所有的文件读写操作（`read_file`, `edit_file`, `write_file`）必须以 `.worktrees/<slug>/...` 为工作根目录。严禁将改动写回主工作区路径！
+  执行 `new` 之后，所有的文件读写操作（`read_file`, `edit_file`, `write_file`）必须以 `.worktrees/clue-lens-<slug>/...` 为工作根目录。严禁将改动写回主工作区路径！
 - **依赖软链只读共享**：
   `node_modules` 是通过软链指向主工作区的同一份依赖。日常开发严禁在 worktree 内部手动删除或随意修改该软链。
 - **沙盒数据库独占**：

@@ -11,7 +11,13 @@ MANIFEST="${AGENT_MANIFEST_FILE:-${ROOT}/.agents/agent-manifest.yml}"
 ROLE=""
 NAME=""
 BASE="HEAD"
-PARENT="$ROOT/../.worktrees"
+GIT_COMMON_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+if [[ -n "$GIT_COMMON_DIR" ]]; then
+    MAIN_ROOT="$(cd "$GIT_COMMON_DIR/.." && pwd -P)"
+else
+    MAIN_ROOT="$ROOT"
+fi
+PARENT="${WORKTREE_PARENT:-$MAIN_ROOT/.worktrees}"
 DRY_RUN=0
 RUN_COMMANDS=0
 CLEANUP=0
