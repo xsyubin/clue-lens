@@ -10,6 +10,7 @@ const CHECK_MANIFEST = path.resolve(__dirname, "../../scripts/gates/check-manife
 const CHECK_SECRETS = path.resolve(__dirname, "../../scripts/gates/check-secrets.mjs");
 const AGENT_CONTRACT = path.resolve(__dirname, "../../scripts/lib/agent-contract.mjs");
 const AGENT_RUN = path.resolve(__dirname, "../../scripts/agent/agent-run.mjs");
+const REVIEW_SCRIPT = path.resolve(__dirname, "../../scripts/review.mjs");
 
 // 探测仓库根目录
 let repoRoot: string;
@@ -108,5 +109,46 @@ test("check-secrets.mjs 扫描语义回归", async (t) => {
     const res = runNode([CHECK_SECRETS, "--staged"], { cwd: repoRoot });
     assert.equal(res.status, 0, res.stderr);
     assert.match(res.stdout, /已扫描 \d+ 个文件/);
+  });
+});
+
+test("review.mjs 审查报告确定性与幂等写入回归", async (t) => {
+  const tmpChecks = path.join(os.tmpdir(), `test-checks-${Date.now()}.list`);
+  const tmpReport = path.join(os.tmpdir(), `test-report-${Date.now()}.md`);
+  // 创建轻量通过的测试检查项（毫秒级执行）
+  fs.writeFileSync(tmpChecks, "scripts/gates/check-manifest.mjs\n", "utf8");
+
+  t.after(() => {
+    fs.rmSync(tmpChecks, { force: true });
+    fs.rmSync(tmpReport, { force: true });
+  });
+
+  await t.test("首次生成：生成规范确定性报告，且不含动态物理时间戳", () => {
+    const res = runNode([REVIEW_SCRIPT], {
+      DETERMINISTIC_REVIEW_CHECKS_FILE: tmpChecks,
+      DETERMINISTIC_REVIEW_REPORT_FILE: tmpReport,
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /审查报告已更新/);
+
+    const content = fs.readFileSync(tmpReport, "utf8");
+    assert.match(content, /# 确定性机器前置审查报告/);
+    assert.match(content, /🟢 PASS/);
+    assert.doesNotMatch(content, /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/, "报告不得包含秒级时间戳导致版本库漂移");
+    assert.doesNotMatch(content, /Git Staged|本地完整工作区/, "报告元数据不得受运行期范围影响产生文本横跳");
+  });
+
+  await t.test("幂等验证：再次运行（即使传入 --staged）内容保持严格一致且提示保持幂等", () => {
+    const contentBefore = fs.readFileSync(tmpReport, "utf8");
+
+    const res = runNode([REVIEW_SCRIPT, "--staged"], {
+      DETERMINISTIC_REVIEW_CHECKS_FILE: tmpChecks,
+      DETERMINISTIC_REVIEW_REPORT_FILE: tmpReport,
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /保持幂等/);
+
+    const contentAfter = fs.readFileSync(tmpReport, "utf8");
+    assert.equal(contentAfter, contentBefore, "再次运行生成的报告内容必须 100% 字节相同");
   });
 });

@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 
 const isWindows = process.platform === "win32";
-const REPORT_FILE = path.join(ROOT, "evidence", "deterministic-review-report.md");
+const REPORT_FILE = process.env.DETERMINISTIC_REVIEW_REPORT_FILE || path.join(ROOT, "evidence", "deterministic-review-report.md");
 const CHECKS_FILE = process.env.DETERMINISTIC_REVIEW_CHECKS_FILE || path.join(ROOT, "scripts", "review-checks.list");
 
 fs.mkdirSync(path.join(ROOT, "evidence"), { recursive: true });
@@ -89,18 +89,12 @@ for (const rawLine of lines) {
   console.log("--------------------------------------------------");
 }
 
-// 格式化当前时间 YYYY-MM-DD HH:mm:ss
-const pad = (n) => String(n).padStart(2, "0");
-const now = new Date();
-const formattedTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-
 const reportContent = [
   "# 确定性机器前置审查报告 (clue-lens)",
   "",
-  `- **审查时间**: ${formattedTime}`,
-  `- **审查范围**: ${diffName}`,
   `- **检查清单**: \`${path.relative(ROOT, CHECKS_FILE)}\``,
   `- **总决议**: ${failures === 0 ? "✅ PASS (全部通过)" : "❌ FAIL (存在阻断问题)"}`,
+  `- **门禁状态**: ${failures === 0 ? `全部 ${results.length}/${results.length} 项门禁通过` : `${failures} 项未通过`}`,
   "",
   "| 检查项 | 状态 | 详情 / 备注 |",
   "|---|---|---|",
@@ -112,10 +106,15 @@ const reportContent = [
   "",
 ].join("\n");
 
-fs.writeFileSync(REPORT_FILE, reportContent, "utf8");
-
-console.log();
-console.log(`=== 审查报告已生成: ${path.relative(ROOT, REPORT_FILE)} ===`);
+const existingContent = fs.existsSync(REPORT_FILE) ? fs.readFileSync(REPORT_FILE, "utf8") : "";
+if (existingContent.trim() !== reportContent.trim()) {
+  fs.writeFileSync(REPORT_FILE, reportContent, "utf8");
+  console.log();
+  console.log(`=== 审查报告已更新: ${path.relative(ROOT, REPORT_FILE)} ===`);
+} else {
+  console.log();
+  console.log(`=== 审查报告内容无变化，保持幂等: ${path.relative(ROOT, REPORT_FILE)} ===`);
+}
 if (failures > 0) {
   console.error(`❌ 确定性前置门禁失败，共发现 ${failures} 项未通过！`);
   process.exit(1);
