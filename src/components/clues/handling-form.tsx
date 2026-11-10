@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { submitHandlingAction } from "@/app/actions/clues";
 import { useCurrentRole } from "@/components/role-switcher";
 
@@ -85,11 +86,11 @@ export function HandlingForm({
         <label className="font-medium text-slate-700 dark:text-slate-300 mb-1 block">
           核查调查日期
         </label>
-        <Input
-          type="date"
+        <DatePicker
           value={checkDate}
-          onChange={(e) => setCheckDate(e.target.value)}
-          className="h-8 text-xs max-w-xs"
+          onChange={setCheckDate}
+          className="max-w-xs"
+          sizeVariant="sm"
           required
         />
       </div>

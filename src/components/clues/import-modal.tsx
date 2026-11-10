@@ -3,6 +3,13 @@
 import React, { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { importCluesAction } from "@/app/actions/clues";
 
 interface ImportModalProps {
@@ -136,24 +143,14 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
-          <div>
-            <h3 className="font-bold text-base text-slate-800 dark:text-slate-100">
-              导入脱敏 Excel 线索台账
-            </h3>
-            <p className="text-xs text-slate-500">
-              支持基于“线索编号”自动 Upsert 增量入库与行级容错
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg w-full">
+        <DialogHeader>
+          <DialogTitle>导入脱敏 Excel 线索台账</DialogTitle>
+          <DialogDescription>
+            支持基于“线索编号”自动 Upsert 增量入库与行级容错
+          </DialogDescription>
+        </DialogHeader>
 
         {/* 模板下载 */}
         <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg text-xs">
@@ -244,7 +241,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
             {isUploading ? "正在解析导入..." : "开始批量入库"}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

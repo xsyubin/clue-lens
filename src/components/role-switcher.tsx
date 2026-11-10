@@ -3,6 +3,13 @@
 import React, { createContext, useContext, useState, useTransition } from "react";
 import { OPERATOR_ROLES } from "@/lib/validations/clue";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { switchDemoRoleAction } from "@/app/actions/clues";
 import { useRouter } from "next/navigation";
 
@@ -60,18 +67,22 @@ export function RoleSwitcher() {
       <span className="text-slate-500 font-medium hidden sm:inline">
         {isPending ? "切换中..." : "当前角色:"}
       </span>
-      <select
+      <Select
         value={currentRole}
         disabled={isPending}
-        onChange={(e) => setRole(e.target.value as RoleType)}
-        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer disabled:opacity-50"
+        onValueChange={(val) => setRole(val as RoleType)}
       >
-        {OPERATOR_ROLES.map((role) => (
-          <option key={role} value={role}>
-            {role}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger size="sm" className="h-7 w-[130px] font-semibold bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {OPERATOR_ROLES.map((role) => (
+            <SelectItem key={role} value={role} className="text-xs">
+              {role}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Badge variant="outline" className="text-[10px] hidden md:inline">
         {currentRole === "综合管理人员" && "负责分派/导入"}
         {currentRole === "线索核查人员" && "负责办理填报"}

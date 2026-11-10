@@ -7,6 +7,13 @@ import { FilterBar, type FilterState } from "./filter-bar";
 import { ImportModal } from "./import-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { useCurrentRole } from "@/components/role-switcher";
 import { exportCluesAction, type ClueWithTags } from "@/app/actions/clues";
 
@@ -449,19 +456,23 @@ export function CluesWorkbench({ initialClues, regions, types }: CluesWorkbenchP
             <span className="text-slate-300 hidden sm:inline">|</span>
             <div className="flex items-center gap-1.5">
               <span>每页显示:</span>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
+              <Select
+                value={String(pageSize)}
+                onValueChange={(val) => {
+                  setPageSize(Number(val));
                   setCurrentPage(1);
                 }}
-                className="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded px-2 py-1 text-xs cursor-pointer focus:outline-none"
               >
-                <option value={5}>5 条</option>
-                <option value={10}>10 条</option>
-                <option value={20}>20 条</option>
-                <option value={50}>50 条</option>
-              </select>
+                <SelectTrigger size="sm" className="w-20 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 条</SelectItem>
+                  <SelectItem value="10">10 条</SelectItem>
+                  <SelectItem value="20">20 条</SelectItem>
+                  <SelectItem value="50">50 条</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

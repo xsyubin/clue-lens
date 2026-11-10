@@ -2,7 +2,22 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { dispatchClueAction } from "@/app/actions/clues";
 import { useCurrentRole } from "@/components/role-switcher";
 
@@ -47,8 +62,6 @@ export function DispatchDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const handleDeptChange = (dept: string) => {
     setDepartment(dept);
     const available = HANDLERS[dept] || [];
@@ -78,77 +91,72 @@ export function DispatchDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-4">
-        <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
-          <div>
-            <h3 className="font-bold text-base text-slate-800 dark:text-slate-100">
-              分派线索责任人
-            </h3>
-            <p className="text-xs text-slate-500">线索编号: {clueNo}</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">
-            ✕
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md w-full">
+        <DialogHeader>
+          <DialogTitle>分派线索责任人</DialogTitle>
+          <DialogDescription>线索编号: {clueNo}</DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs pt-1">
           <div>
-            <label className="font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+            <label className="font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
               承办责任部门
             </label>
-            <select
-              value={department}
-              onChange={(e) => handleDeptChange(e.target.value)}
-              className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs"
-            >
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <Select value={department} onValueChange={handleDeptChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="请选择责任部门" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEPARTMENTS.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
-            <label className="font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+            <label className="font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
               承办责任人员
             </label>
-            <select
-              value={handler}
-              onChange={(e) => setHandler(e.target.value)}
-              className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs"
-            >
-              {(HANDLERS[department] || []).map((h) => (
-                <option key={h} value={h}>
-                  {h}
-                </option>
-              ))}
-            </select>
+            <Select value={handler} onValueChange={setHandler}>
+              <SelectTrigger>
+                <SelectValue placeholder="请选择责任人" />
+              </SelectTrigger>
+              <SelectContent>
+                {(HANDLERS[department] || []).map((h) => (
+                  <SelectItem key={h} value={h}>
+                    {h}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
-            <label className="font-medium text-slate-700 dark:text-slate-300 mb-1 block">
-              要求办理期限 (YYYY-MM-DD)
+            <label className="font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
+              要求办理期限
             </label>
-            <Input
-              type="date"
+            <DatePicker
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="h-9 text-xs"
+              onChange={setDeadline}
+              placeholder="请选择办理期限"
               required
             />
           </div>
 
           <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
+            <Checkbox
               id="needReviewCheckbox"
               checked={needReview}
-              onChange={(e) => setNeedReview(e.target.checked)}
-              className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              onCheckedChange={(checked) => setNeedReview(Boolean(checked))}
             />
-            <label htmlFor="needReviewCheckbox" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+            <label
+              htmlFor="needReviewCheckbox"
+              className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none"
+            >
               办结后需要部门负责人复核（推荐高/中风险线索勾选）
             </label>
           </div>
@@ -163,12 +171,17 @@ export function DispatchDialog({
             <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>
               取消
             </Button>
-            <Button type="submit" size="sm" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
               {isSubmitting ? "正在分派..." : "确认分派"}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

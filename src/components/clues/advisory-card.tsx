@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { generateAdvisoryAction } from "@/app/actions/clues";
 import type { AdvisoryResult } from "@/lib/advisory-engine";
 
@@ -74,15 +75,16 @@ export function AdvisoryCard({ clueId, clueStatus, onAdoptMeasures }: AdvisoryCa
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400 select-none">
+            <Checkbox
+              id="useAiCheckbox"
               checked={useAi}
-              onChange={(e) => setUseAi(e.target.checked)}
-              className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              onCheckedChange={(checked) => setUseAi(Boolean(checked))}
             />
-            <span>尝试 AI 大模型研判</span>
-          </label>
+            <label htmlFor="useAiCheckbox" className="cursor-pointer text-xs">
+              尝试 AI 大模型研判
+            </label>
+          </div>
 
           <Button
             size="sm"

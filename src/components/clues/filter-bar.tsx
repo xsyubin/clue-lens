@@ -2,8 +2,15 @@
 
 import React from "react";
 import { CLUE_STATUSES, CLUE_TYPES, RISK_LEVELS } from "@/lib/validations/clue";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export interface FilterState {
   region: string;
@@ -28,25 +35,25 @@ export function FilterBar({ filters, onChange, regions, types }: FilterBarProps)
 
   const handleReset = () => {
     onChange({
+      keyword: "",
       region: "",
       type: "",
       riskLevel: "",
       status: "",
       anomalyTag: "",
-      keyword: "",
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some((v) => v !== "");
+  const hasActiveFilters = Object.values(filters).some((v) => Boolean(v));
 
   return (
-    <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-xs">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* 关键字搜索 */}
         <div>
-          <label className="text-xs font-medium text-slate-500 mb-1 block">对象/编号搜索</label>
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">关键字检索</label>
           <Input
-            placeholder="搜索商户名或编号..."
+            placeholder="搜索线索编号/经营对象/案由..."
             value={filters.keyword}
             onChange={(e) => handleFieldChange("keyword", e.target.value)}
             className="h-9 text-xs"
@@ -55,92 +62,112 @@ export function FilterBar({ filters, onChange, regions, types }: FilterBarProps)
 
         {/* 所属区域 */}
         <div>
-          <label className="text-xs font-medium text-slate-500 mb-1 block">所属区域</label>
-          <select
-            value={filters.region}
-            onChange={(e) => handleFieldChange("region", e.target.value)}
-            className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary"
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">所属区域</label>
+          <Select
+            value={filters.region || "ALL"}
+            onValueChange={(val) => handleFieldChange("region", val === "ALL" ? "" : val)}
           >
-            <option value="">全部区域</option>
-            {regions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="全部区域" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部区域</SelectItem>
+              {regions.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 线索类型 */}
         <div>
-          <label className="text-xs font-medium text-slate-500 mb-1 block">线索类型</label>
-          <select
-            value={filters.type}
-            onChange={(e) => handleFieldChange("type", e.target.value)}
-            className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary"
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">线索类型</label>
+          <Select
+            value={filters.type || "ALL"}
+            onValueChange={(val) => handleFieldChange("type", val === "ALL" ? "" : val)}
           >
-            <option value="">全部类型</option>
-            {(types.length > 0 ? types : CLUE_TYPES).map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="全部类型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部类型</SelectItem>
+              {(types.length > 0 ? types : CLUE_TYPES).map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 风险等级 */}
         <div>
-          <label className="text-xs font-medium text-slate-500 mb-1 block">风险等级</label>
-          <select
-            value={filters.riskLevel}
-            onChange={(e) => handleFieldChange("riskLevel", e.target.value)}
-            className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary"
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">风险等级</label>
+          <Select
+            value={filters.riskLevel || "ALL"}
+            onValueChange={(val) => handleFieldChange("riskLevel", val === "ALL" ? "" : val)}
           >
-            <option value="">全部风险</option>
-            {RISK_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {level}风险
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="全部风险" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部风险</SelectItem>
+              {RISK_LEVELS.map((level) => (
+                <SelectItem key={level} value={level}>
+                  {level}风险
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 办理状态 */}
         <div>
-          <label className="text-xs font-medium text-slate-500 mb-1 block">办理状态</label>
-          <select
-            value={filters.status}
-            onChange={(e) => handleFieldChange("status", e.target.value)}
-            className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary"
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">办理状态</label>
+          <Select
+            value={filters.status || "ALL"}
+            onValueChange={(val) => handleFieldChange("status", val === "ALL" ? "" : val)}
           >
-            <option value="">全部状态</option>
-            {CLUE_STATUSES.map((st) => (
-              <option key={st} value={st}>
-                {st === "PENDING_ASSIGN" && "待分派"}
-                {st === "IN_PROGRESS" && "办理中"}
-                {st === "PENDING_REVIEW" && "待复核"}
-                {st === "COMPLETED" && "已完成"}
-                {st === "CLOSED" && "已关闭"}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="全部状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部状态</SelectItem>
+              {CLUE_STATUSES.map((st) => (
+                <SelectItem key={st} value={st}>
+                  {st === "PENDING_ASSIGN" && "待分派"}
+                  {st === "IN_PROGRESS" && "办理中"}
+                  {st === "PENDING_REVIEW" && "待复核"}
+                  {st === "COMPLETED" && "已完成"}
+                  {st === "CLOSED" && "已关闭"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 异常预警标签 */}
         <div>
-          <label className="text-xs font-medium text-slate-500 mb-1 block">异常预警特征</label>
-          <select
-            value={filters.anomalyTag}
-            onChange={(e) => handleFieldChange("anomalyTag", e.target.value)}
-            className="w-full h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary"
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">异常预警特征</label>
+          <Select
+            value={filters.anomalyTag || "ALL"}
+            onValueChange={(val) => handleFieldChange("anomalyTag", val === "ALL" ? "" : val)}
           >
-            <option value="">全部标签</option>
-            <option value="REPEAT_TARGET">🔥 重复经营对象</option>
-            <option value="REGION_CONCENTRATED">⚠️ 区域短期集中</option>
-            <option value="TYPE_REPEATED">📌 同类问题连发</option>
-            <option value="AMOUNT_ABNORMAL">💰 涉案金额异常</option>
-            <option value="OVERDUE">🚨 办理超期预警</option>
-            <option value="HIGH_RISK_UNASSIGNED">⚡ 高危待派线索</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="全部标签" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部标签</SelectItem>
+              <SelectItem value="REPEAT_TARGET">🔥 重复经营对象</SelectItem>
+              <SelectItem value="REGION_CONCENTRATED">⚠️ 区域短期集中</SelectItem>
+              <SelectItem value="TYPE_REPEATED">📌 同类问题连发</SelectItem>
+              <SelectItem value="AMOUNT_ABNORMAL">💰 涉案金额异常</SelectItem>
+              <SelectItem value="OVERDUE">🚨 办理超期预警</SelectItem>
+              <SelectItem value="HIGH_RISK_UNASSIGNED">⚡ 高危待派线索</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
