@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/scripts/agent/pre-tool-guard.sh"
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/agent/pre-tool-guard.mjs\""
           }
         ]
       }

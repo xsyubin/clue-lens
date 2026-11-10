@@ -14,12 +14,12 @@
 
 ## 3. 门禁验证证据 (Evidence Checklist)
 - [ ] **确定性机器全量前置审查**：`npm run review` 或 `./scripts/review.sh --staged`
-  - 静态安全门禁 (`scripts/gates/check-security.sh`)：[ ] PASS
-  - 架构与命名一致性 (`scripts/gates/check-consistency.sh`)：[ ] PASS
-  - 敏感凭据扫描 (`scripts/gates/check-secrets.sh`)：[ ] PASS
-  - TypeScript 严格类型与 Lint (`scripts/gates/check-types.sh`)：[ ] PASS
-  - 单元测试与 RBAC 边界防卫测试 (`scripts/gates/check-tests.sh`)：[ ] PASS
-  - Next.js 生产环境构建打包 (`scripts/gates/check-build.sh`)：[ ] PASS
+  - 静态安全门禁 (`scripts/gates/check-security.mjs`)：[ ] PASS
+  - 架构与命名一致性 (`scripts/gates/check-consistency.mjs`)：[ ] PASS
+  - 敏感凭据扫描 (`scripts/gates/check-secrets.mjs`)：[ ] PASS
+  - TypeScript 严格类型与 Lint (`scripts/gates/check-types.mjs`)：[ ] PASS
+  - 单元测试与 RBAC 边界防卫测试 (`scripts/gates/check-tests.mjs`)：[ ] PASS
+  - Next.js 生产环境构建打包 (`scripts/gates/check-build.mjs`)：[ ] PASS
   - 审查报告归档：[`evidence/deterministic-review-report.md`](evidence/deterministic-review-report.md)
 - [ ] **MCP 协议与数据库契约测试**：`npm run test:mcp` (全部 11/11 项通过)
 - [ ] **Agent 并发与隔离凭证**（如涉及 Subagent 并发开发）：

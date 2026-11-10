@@ -11,9 +11,9 @@ alwaysApply: true
 **任何要提交的代码改动（全栈功能开发、缺陷修复、架构重构、依赖变更）严禁直接在主工作区的 `main` 分支上动手。**
 只读调研（查看源码、查阅文档、探查 DB Schema、排查日志）不受此约束。
 
-操作流程严格固定为三步，机械步骤全部由 `scripts/agent/worktree.sh` 驱动：
+操作流程严格固定为三步，机械步骤全部由 `scripts/agent/worktree.mjs` 驱动（`worktree.sh` 为 POSIX 薄包装，Windows 请直接使用 node 命令）：
 
-1. **开（New）**：`./scripts/agent/worktree.sh new <slug>`
+1. **开（New）**：`./scripts/agent/worktree.sh new <slug>`（跨平台统一入口：`node scripts/agent/worktree.mjs new <slug>`）
    - 自动拉出分支 `agent/<slug>`，并创建工作目录 `.worktrees/clue-lens-<slug>`；
    - 自动软链主工程的 `node_modules`，免去重复安装依赖；
    - 自动克隆独立私有的 SQLite 沙盒数据库 `data/app.db`，从物理层杜绝并发锁死与污染；

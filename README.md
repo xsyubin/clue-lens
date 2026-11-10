@@ -11,9 +11,8 @@ Next.js 15（App Router）+ Drizzle ORM + SQLite + Better Auth + Tailwind CSS v4
 要求 Node.js 20.12 或更高版本。
 
 ```bash
-./scripts/ops/init-hooks.sh   # 激活本地 Git 门禁与脚本执行权限
 npm install                   # 安装依赖
-npm run setup                 # 生成 .env（含随机安全密钥）并初始化数据库表
+npm run setup                 # 生成 .env（含随机安全密钥）、初始化数据库并激活 Git 门禁
 npm run dev                   # 启动开发服务器
 ```
 
@@ -59,9 +58,10 @@ clue-lens/
 ├── scripts/                   # 自动化运维、质量门禁与智能体脚本
 │   ├── review.sh              # 门禁审查唯一总入口（支持 --staged）
 │   ├── review-checks.list     # 门禁审查可插拔配置清单
-│   ├── gates/                 # 质量门禁检查类脚本 (check-*.sh)
-│   ├── ops/                   # 环境配置与数据运维 (setup/init-db/seed/init-hooks)
-│   ├── agent/                 # 多智能体调度与隔离沙盒 (agent-run/worktree)
+│   ├── lib/                   # 跨平台执行与 Manifest 契约共享库 (exec/agent-contract)
+│   ├── gates/                 # 质量门禁检查类脚本 (check-*.mjs)
+│   ├── ops/                   # 环境配置与数据运维 (setup/init-db/seed)
+│   ├── agent/                 # 多智能体调度与隔离沙盒 (agent-run/worktree/pre-tool-guard)
 │   └── mcp/                   # MCP 协议服务与探查客户端 (server/test-client)
 ├── evidence/                  # 机器审查报告输出归档
 ├── src/

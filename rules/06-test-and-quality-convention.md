@@ -1,6 +1,6 @@
 ---
 description: "测试与代码质量规约：静态类型检查、确定性门禁、测试分类判定矩阵与严禁伪测试"
-globs: "src/**/*.test.ts,src/**/*.test.tsx,scripts/**/*.sh"
+globs: "src/**/*.test.ts,src/**/*.test.tsx,scripts/**"
 alwaysApply: true
 ---
 
@@ -13,10 +13,10 @@ alwaysApply: true
 1. **类型安全门禁 (TypeScript):**
    - 提交前必须执行 `npm run typecheck`。
    - `tsconfig.json` 保持 `strict: true`，严禁提交存在 `any` 泛滥或 TypeScript 类型报错的代码。
-2. **确定性安全与规范门禁 (Shell Scripts):**
-   - `./scripts/gates/check-consistency.sh`: 验证核心物理表名、模型类、SDD 契约与架构文档定义零漂移。
-   - `./scripts/gates/check-security.sh`: 静态扫描 Server Actions 是否遗漏鉴权守卫、nextCookies 插件与 C++ 原生驱动配置。
-   - `./scripts/gates/check-secrets.sh`: 严防任何生产密钥或私有 Token 误入版本控制。
+2. **确定性安全与规范门禁 (Node.js ESM Scripts):**
+   - `node scripts/gates/check-consistency.mjs`: 验证核心物理表名、模型类、SDD 契约与架构文档定义零漂移。
+   - `node scripts/gates/check-security.mjs`: 静态扫描 Server Actions 是否遗漏鉴权守卫、nextCookies 插件与 C++ 原生驱动配置。
+   - `node scripts/gates/check-secrets.mjs`: 严防任何生产密钥或私有 Token 误入版本控制。
    - `npm run test:mcp`: 验证 MCP 智能体探查契约、RBAC 角色拦截与涉密黑名单安全准入。
 3. **业务逻辑与自动化测试分级判定矩阵 (Node Test Runner / tsx):**
    测试框架统一采用 Node 原生测试驱动（`tsx --test src/tests/*.test.ts`），按代码逻辑类型实施精准分层，严禁一刀切与形式主义：

@@ -59,19 +59,18 @@ for (const rawLine of lines) {
       env: process.env,
     });
   } else if (check.endsWith(".sh")) {
+    // Windows 下不猜测 bash 解释器（可能误连 WSL bash），直接 fail-loud 提示迁移
     if (isWindows) {
-      child = spawnSync("bash", [fullPath, ...args], {
-        cwd: ROOT,
-        stdio: "inherit",
-        env: process.env,
-      });
-    } else {
-      child = spawnSync(fullPath, args, {
-        cwd: ROOT,
-        stdio: "inherit",
-        env: process.env,
-      });
+      console.error(`❌ [UNSUPPORTED] Windows 不支持 shell 检查项，请改用 Node.js ESM (.mjs) 脚本: ${check}`);
+      results.push({ status: "FAIL", check, note: "Windows 不支持 shell 检查项" });
+      failures++;
+      continue;
     }
+    child = spawnSync(fullPath, args, {
+      cwd: ROOT,
+      stdio: "inherit",
+      env: process.env,
+    });
   } else {
     child = spawnSync(fullPath, args, {
       cwd: ROOT,

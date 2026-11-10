@@ -15,7 +15,7 @@
   4. **原生模块与运行时架构约束:** `better-sqlite3` 是原生 C++ 模块，`next.config.ts` 必须显式声明 `serverExternalPackages: ["better-sqlite3"]`。SQLite 连接必须在开发模式下缓存至 `globalThis` 以避免 HMR 热更新泄漏句柄。
   5. **敏感信息脱敏与安全底线:** 涉案当事人手机号等敏感信息在前端列表展示或非审计日志打印中必须统一调用 `maskMobile` 进行掩码脱敏（如 `138****0000`）。严禁向客户端泄露密码哈希、Secret 密钥或会话凭据。
   6. **MCP 探查与审计安全红线:** MCP 工具 `inspect_db_schema` 仅允许探查表结构元数据（DDL、列定义、外键、索引），严禁读取真实业务敏感数据；`GUEST` 角色禁止访问任何诊断工具；`ops_user_credential` 属于高危涉密黑名单，触发访问必须坚决阻断并告警。
-  7. **代码修改与 Worktree 物理隔离红线:** 任何要提交的代码改动、特性开发或架构改造，严禁直接在主工作区 `main` 分支上动手；必须通过 `./scripts/agent/worktree.sh new <slug>`（或并发批量时使用 `agent-run.sh` / Subagent `Workspace: "share"`）在独立 Git Worktree + 新分支中进行。测试全绿后通过 `./scripts/agent/worktree.sh merge <slug>` 快进合并，从物理层面彻底消除文件互相覆盖、Git index 锁死与 SQLite 数据库锁死（详见 [rules/08-worktree-workflow.md](rules/08-worktree-workflow.md)）。
+  7. **代码修改与 Worktree 物理隔离红线:** 任何要提交的代码改动、特性开发或架构改造，严禁直接在主工作区 `main` 分支上动手；必须通过 `./scripts/agent/worktree.sh new <slug>`（跨平台统一入口 `node scripts/agent/worktree.mjs new <slug>`；并发批量时使用 `agent-run.mjs` / Subagent `Workspace: "share"`）在独立 Git Worktree + 新分支中进行。测试全绿后通过 `./scripts/agent/worktree.sh merge <slug>` 快进合并，从物理层面彻底消除文件互相覆盖、Git index 锁死与 SQLite 数据库锁死（详见 [rules/08-worktree-workflow.md](rules/08-worktree-workflow.md)）。
 
 > [!NOTE]
 > 系统的分层调用时序、数据库 ER 关系与物理字段字典、部署拓扑及前端设计系统，以 [ARCHITECTURE.md](ARCHITECTURE.md) 为唯一事实源（SSOT）；本总纲侧重规则索引、安全军规与工程门禁。
@@ -31,7 +31,7 @@
 | [rules/03-drizzle-convention.md](rules/03-drizzle-convention.md) | Drizzle Schema 定义、推导类型、查询规约与迁移工作流 | `src/db/**/*.ts`, `drizzle.config.ts` | **[必读]** |
 | [rules/04-server-actions-convention.md](rules/04-server-actions-convention.md) | Server Actions 模式、用户隔离、Zod 验证与 revalidatePath | `src/app/actions/**/*.ts` | **[必读]** |
 | [rules/05-coding-style.md](rules/05-coding-style.md) | TypeScript/React 19 编码风格、命名规范与目录约定 | `src/**/*.ts`, `src/**/*.tsx` | **[必读]** |
-| [rules/06-test-and-quality-convention.md](rules/06-test-and-quality-convention.md) | 确定性代码质量、类型检查门禁与测试规范 | `**/*.test.ts`, `scripts/**/*.sh` | **[必读]** |
+| [rules/06-test-and-quality-convention.md](rules/06-test-and-quality-convention.md) | 确定性代码质量、类型检查门禁与测试规范 | `**/*.test.ts`, `scripts/**` | **[必读]** |
 | [rules/07-security-and-auth.md](rules/07-security-and-auth.md) | Better Auth 配置、Session 处理、CSRF/Cookie 防护与敏感脱敏 | `src/lib/auth*.ts`, `src/lib/session.ts` | **[必读]** |
 | [rules/08-worktree-workflow.md](rules/08-worktree-workflow.md) | 代码修改与改造硬约束、Worktree 生命周期、依赖软链与快进合并 | `**/*` | **[必读]** |
 | [spec/clue-lens/requirements.md](spec/clue-lens/requirements.md) | 业务规格书：专卖监管线索全生命周期状态流转、异常规则与契约 | `src/**/*.ts`, `spec/**/*.md` | **[必读]** |
@@ -46,7 +46,7 @@
 
 ### SDD 技能库 (.agents/skills)
 详见 [.agents/skills/WORKFLOW.md](.agents/skills/WORKFLOW.md)，提供规格驱动开发的六步标准技能流水线。跨工具的角色、输入输出、允许路径和串并行边界见 [.agents/agent-manifest.yml](.agents/agent-manifest.yml)；它是本项目的治理清单，不是某个 Agent 工具的原生配置文件。
-执行前运行 `./scripts/gates/check-manifest.sh`；需要隔离运行角色时使用 `./scripts/agent/agent-run.sh --role <role> --name <run> --dry-run`。
+执行前运行 `node scripts/gates/check-manifest.mjs`；需要隔离运行角色时使用 `node scripts/agent/agent-run.mjs --role <role> --name <run> --dry-run`。
 - **`spec-clarification`**: 业务需求澄清与边界发掘
 - **`spec-requirements`**: 正式业务与技术需求细化 (EARS 格式)
 - **`spec-design`**: 基于现有架构与规范的技术设计
@@ -66,11 +66,10 @@
 
 ## 快速上手与验证流程
 
-1. 首次使用初始化环境：
+1. 首次使用初始化环境（Windows / macOS / Linux 全平台命令一致）：
    ```bash
-   ./scripts/ops/init-hooks.sh   # 激活团队共享 Git 门禁与脚本可执行权限
    npm install                   # 安装依赖
-   npm run setup                 # 生成 .env（含随机密钥）并初始化数据库表
+   npm run setup                 # 生成 .env（含随机密钥）、初始化数据库并激活 Git 门禁
    ```
 2. 本地开发与调试：
    ```bash
@@ -79,10 +78,10 @@
    ```
 3. 提交代码前确定性质量门禁验证：
    ```bash
-   npm run typecheck                  # TypeScript 静态类型无死角检查
-   npm run test:mcp                   # 验证 MCP 协议契约与 SQLite 探查能力
-   ./scripts/gates/check-consistency.sh # 工程命名、表结构与架构一致性校验
-   ./scripts/gates/check-secrets.sh     # 高置信度私钥与 Token 泄露扫描
-   ./scripts/gates/check-security.sh    # 服务端鉴权与安全红线静态扫描
-   ./scripts/review.sh                  # 运行全套机器前置审查并生成审计报告
+   npm run typecheck                    # TypeScript 静态类型无死角检查
+   npm run test:mcp                     # 验证 MCP 协议契约与 SQLite 探查能力
+   npm run check:consistency            # 工程命名、表结构与架构一致性校验
+   node scripts/gates/check-secrets.mjs # 高置信度私钥与 Token 泄露扫描
+   npm run check:security               # 服务端鉴权与安全红线静态扫描
+   npm run review                       # 运行全套机器前置审查并生成审计报告
    ```

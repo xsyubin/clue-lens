@@ -3,7 +3,7 @@
 		"PreToolUse": [{
 			"matcher": "read_file|run_command|Bash|Edit|Write|edit_file|write_file",
 			"hooks": [{
-				"command": "../scripts/agent/pre-tool-guard.sh"
+				"command": "node ../scripts/agent/pre-tool-guard.mjs"
 			}]
 		}]
 	}

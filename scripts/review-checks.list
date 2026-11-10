@@ -1,10 +1,11 @@
 # Deterministic review checks for clue-lens
 # Add a new executable check script here when a repository-wide invariant is introduced.
-scripts/gates/check-consistency.sh
-scripts/gates/check-security.sh
-scripts/gates/check-secrets.sh
-scripts/gates/check-mcp.sh
-scripts/gates/check-manifest.sh
-scripts/gates/check-types.sh
-scripts/gates/check-tests.sh
-scripts/gates/check-build.sh
+# 检查项统一使用 Node.js ESM (.mjs)，保证 Windows / macOS / Linux 全平台可执行。
+scripts/gates/check-consistency.mjs
+scripts/gates/check-security.mjs
+scripts/gates/check-secrets.mjs
+scripts/gates/check-mcp.mjs
+scripts/gates/check-manifest.mjs
+scripts/gates/check-types.mjs
+scripts/gates/check-tests.mjs
+scripts/gates/check-build.mjs

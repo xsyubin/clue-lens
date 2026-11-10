@@ -5,7 +5,7 @@ description: AI 辅助代码评审与交付门禁（Reviewer Agent）。对比�
 
 # AI 辅助代码评审与交付治理 (spec-review)
 
-> 本 Skill 负责 Reviewer Agent 的语义审查。`scripts/review.sh`、`scripts/gates/check-security.sh` 和 `scripts/gates/check-secrets.sh` 只是确定性前置门禁，不等价于模型审查，也不能替代人工终审。
+> 本 Skill 负责 Reviewer Agent 的语义审查。`scripts/review.mjs`、`scripts/gates/check-security.mjs` 和 `scripts/gates/check-secrets.mjs` 只是确定性前置门禁，不等价于模型审查，也不能替代人工终审。
 > B-01～B-06 是本工程线索洞察案例的项目级基线；新增功能应优先以 `spec/<feature>/requirements.md`、`design.md` 和 `tasks.md` 派生本次变更的业务风险清单，不把新业务规则写入通用机器脚本。
 
 以功能规格文件（`spec/<feature>/requirements.md`，本工程对应 `spec/clue-lens/requirements.md`）、架构规则（`AGENTS.md`、`rules/*.md`）为基准，对当前代码变更（Git Diff）进行严格的 AI 辅助初审，输出《代码健康与安全审计卡》，杜绝“只管打字提速、不抓审计责任”。
