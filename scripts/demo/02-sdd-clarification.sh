@@ -1,70 +1,154 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # scripts/demo/02-sdd-clarification.sh
-# 场景二：【意图契约】讨好型脑补 vs SDD 规格驱动与 GWT (100% 真实执行版)
+# 场景二：【意图契约】一句话需求开发对比：讨好型脑补放行 vs SDD 状态机守卫
 # ==============================================================================
 source "$(dirname "$0")/lib/common.sh"
 
-demo_header "02" "意图契约与反向排雷 —— 讨好型脑补 vs SDD 资深架构师反客为主" "板块二：2.2 说清规格（为什么不能直接丢需求、可判定性与 GWT）"
+demo_header "02" "意图契约与反向排雷 —— 一句话需求开发效果 A/B 真实对决" "板块二：2.2 说清规格（为什么不能直接丢需求、可判定性与 GWT）"
+
+demo_feature "在线索办结流转时，根据涉案金额自动计算处罚分值并扣减积分"
 
 # ------------------------------------------------------------------------------
-# 第 1 幕：红屏警报 —— 现场驱动大模型反思“模糊需求直冲代码”的致命暗雷
+# 前者：没有 Harness 资产 (直接丢需求，AI 讨好型脑补代码)
 # ------------------------------------------------------------------------------
-demo_act "1" "野生裸奔：现场大模型对决 —— 模糊需求背后的 4 大致命生产暗雷" "$RED"
-demo_step "模拟业务方只给了一句话口语需求：'实现专卖线索流转到办结状态，校验金额并归档'..."
+demo_act "前者效果" "没有 Harness 资产：AI 讨好型顺从，负数金额与跳跃状态全放行" "$RED"
+demo_step "模拟没有 SDD 规格时，AI 凭空生成的业务处理函数..."
 
-if command -v agy &>/dev/null; then
-  demo_ai "业务需求：实现专卖线索流转到办结状态，校验金额并归档。请指出这句需求背后的 4 个致命生产漏洞（金额边界、状态逆向流转、权限准入、伪单测）。"
-  agy -p "业务方只有一句话需求：'实现专卖线索流转到办结状态，校验金额并归档'。请站在资深架构师视角，简明扼要指出直接把这句需求拿去写代码，必然埋下的 4 个致命生产漏洞（涉案金额边界、状态逆向流转、权限角色守卫、自欺欺人的伪单测）。" --print-timeout 20s || true
-else
-  echo -e "${RED}
-  [模糊需求背后的四大生产暗雷]:
-  1. 涉案金额负数或精度丢失无防卫；
-  2. 状态机未复核强行办结造成状态撕裂；
-  3. 未对操作人进行 Role Guard 角色鉴权；
-  4. 生成的单测全是 Fake Mock，毫无业务判定力！${RESET}"
-fi
+demo_run "node -e '
+  // 前者 AI 生成的代码：没有输入防卫，没有状态机守卫
+  function completeClueWithoutSpec(clue, penaltyAmount) {
+    // ❌ 漏洞 1: 缺少金额正数防卫，负数也能算分
+    // ❌ 漏洞 2: 缺少当前状态校验，新线索未经复核直接办结
+    const scoreDeduct = Math.floor(penaltyAmount / 100);
+    clue.status = \"COMPLETED\";
+    clue.score = (clue.score || 100) - scoreDeduct;
+    return { ok: true, clue };
+  }
 
-echo ""
-demo_fail "致命后果：未经澄清的需求直接丢给 AI，AI 会悄悄把所有生产边界脑补为'默认放行'，带崩生产系统！"
+  // 现场用生产脏数据进行真实调用测试：
+  const testClue = { id: \"CLUE-001\", status: \"NEW\", score: 100 };
+  const dirtyAmount = -50000; // 💣 恶意/异常负数涉案金额
+
+  const result = completeClueWithoutSpec(testClue, dirtyAmount);
+  console.log(\"⚠️ [前者执行输出结果]:\", JSON.stringify(result));
+
+  if (result.ok && result.clue.score > 100) {
+    console.error(\"💥 [业务逻辑暴击]：负数涉案金额居然导致积分不降反增变成 \" + result.clue.score + \" 分！且从 NEW 直接跳变 COMPLETED！\");
+  }
+'"
+node -e '
+  function completeClueWithoutSpec(clue, penaltyAmount) {
+    const scoreDeduct = Math.floor(penaltyAmount / 100);
+    clue.status = "COMPLETED";
+    clue.score = (clue.score || 100) - scoreDeduct;
+    return { ok: true, clue };
+  }
+
+  const testClue = { id: "CLUE-001", status: "NEW", score: 100 };
+  const dirtyAmount = -50000;
+
+  const result = completeClueWithoutSpec(testClue, dirtyAmount);
+  console.log("⚠️ [前者执行输出结果]:", JSON.stringify(result));
+
+  if (result.ok && result.clue.score > 100) {
+    console.error("💥 [业务逻辑暴击]：负数涉案金额居然导致积分不降反增变成 " + result.clue.score + " 分！且从 NEW 直接跳变 COMPLETED！");
+  }
+'
+
+demo_fail "前者开发效果：大模型悄悄脑补规则，负数金额导致积分倒涨，状态机瞬间撕裂！"
 
 demo_pause
 
 # ------------------------------------------------------------------------------
-# 第 2 幕：绿屏反制 —— clue-lens SDD 五阶段规格资产链
+# 后者：佩戴 Harness 资产 (SDD requirements.md 状态机与 EARS 契约)
 # ------------------------------------------------------------------------------
-demo_act "2" "佩戴 Harness：澄清反问排雷 ➔ EARS 正式规格 ➔ GWT 机器判定" "$GREEN"
-demo_step "现场查阅 spec-clarification 真实澄清清单 (范围与防雷决策拍板)..."
-
-demo_run "head -n 35 ${ROOT_DIR}/spec/clue-lens/clarification.md"
-head -n 35 "${ROOT_DIR}/spec/clue-lens/clarification.md"
-
-echo ""
-demo_step "现场查阅 requirements.md 中的可判定性标准 (消灭形容词，采用 GWT 验收契约)..."
-demo_run "grep -E -A 15 'GWT 验收场景' ${ROOT_DIR}/spec/clue-lens/requirements.md || grep -E -A 15 '验收标准' ${ROOT_DIR}/spec/clue-lens/requirements.md"
-grep -E -A 15 'GWT 验收场景' "${ROOT_DIR}/spec/clue-lens/requirements.md" || grep -E -A 15 '验收标准' "${ROOT_DIR}/spec/clue-lens/requirements.md" || true
+demo_act "后者效果" "佩戴 Harness 战甲：严格依照 SDD 状态机守卫与 Zod 防卫契约开发" "$GREEN"
+demo_step "展示 SDD 规格资产中已固化的专卖线索状态机流转守卫..."
+demo_run "grep -E -A 8 '线索状态机定义与跃迁合法性' ${ROOT_DIR}/spec/clue-lens/requirements.md || true"
+grep -E -A 8 '线索状态机定义与跃迁合法性' "${ROOT_DIR}/spec/clue-lens/requirements.md" || true
 
 echo ""
-demo_step "现场查阅 tasks.md 原子工单拓扑图 (单步极小、严格绑定独立验证命令)..."
-demo_run "head -n 30 ${ROOT_DIR}/spec/clue-lens/tasks.md"
-head -n 30 "${ROOT_DIR}/spec/clue-lens/tasks.md"
+demo_step "现场运行严格依照 SDD 规格生成的防卫代码，传入相同的异常脏数据..."
+demo_run "node -e '
+  const { z } = require(\"zod\");
 
-demo_pass "通过 SDD 规格五步链，所有生产边界与异常状态机显式闭环，伪单测无所遁形！"
+  // 后者依循 SDD 规格生成的函数：双重守卫
+  function completeClueWithSDD(clue, penaltyAmount) {
+    // 🛡️ 守卫 1: Zod 涉案金额严格防卫（必须为正整数）
+    const amountSchema = z.number().positive({ message: \"涉案金额必须为正数\" });
+    const parseRes = amountSchema.safeParse(penaltyAmount);
+    if (!parseRes.success) {
+      return { ok: false, error: \"输入防卫拦截: \" + parseRes.error.issues[0]?.message };
+    }
+
+    // 🛡️ 守卫 2: 状态机前置守卫（必须为 PENDING_REVIEW 待复核状态方可办结）
+    if (clue.status !== \"PENDING_REVIEW\") {
+      return { ok: false, error: \"状态机守卫拦截: 只有待复核线索可办理办结，当前状态: \" + clue.status };
+    }
+
+    const scoreDeduct = Math.floor(penaltyAmount / 100);
+    clue.status = \"COMPLETED\";
+    clue.score = Math.max(0, (clue.score || 100) - scoreDeduct);
+    return { ok: true, clue };
+  }
+
+  // 相同脏数据真实运行验证：
+  const testClue = { id: \"CLUE-001\", status: \"NEW\", score: 100 };
+  const dirtyAmount = -50000;
+
+  const res1 = completeClueWithSDD(testClue, dirtyAmount);
+  console.log(\"🛡️ [后者执行输出结果 - 金额校验]:\", JSON.stringify(res1));
+
+  const res2 = completeClueWithSDD(testClue, 50000);
+  console.log(\"🛡️ [后者执行输出结果 - 状态机校验]:\", JSON.stringify(res2));
+'"
+node -e '
+  const { z } = require("zod");
+
+  function completeClueWithSDD(clue, penaltyAmount) {
+    const amountSchema = z.number().positive({ message: "涉案金额必须为正数" });
+    const parseRes = amountSchema.safeParse(penaltyAmount);
+    if (!parseRes.success) {
+      return { ok: false, error: "输入防卫拦截: " + parseRes.error.issues[0]?.message };
+    }
+
+    if (clue.status !== "PENDING_REVIEW") {
+      return { ok: false, error: "状态机守卫拦截: 只有待复核线索可办理办结，当前状态: " + clue.status };
+    }
+
+    const scoreDeduct = Math.floor(penaltyAmount / 100);
+    clue.status = "COMPLETED";
+    clue.score = Math.max(0, (clue.score || 100) - scoreDeduct);
+    return { ok: true, clue };
+  }
+
+  const testClue = { id: "CLUE-001", status: "NEW", score: 100 };
+  const dirtyAmount = -50000;
+
+  const res1 = completeClueWithSDD(testClue, dirtyAmount);
+  console.log("🛡️ [后者执行输出结果 - 金额校验]:", JSON.stringify(res1));
+
+  const res2 = completeClueWithSDD(testClue, 50000);
+  console.log("🛡️ [后者执行输出结果 - 状态机校验]:", JSON.stringify(res2));
+'
+
+demo_pass "后者开发效果：Zod 与状态机双重严密守卫，脏数据与非法跃迁被 100% 当场阻断！"
 
 demo_pause
 
 # ------------------------------------------------------------------------------
 # 第 3 幕：架构师对账卡与金句
 # ------------------------------------------------------------------------------
-demo_act "3" "架构师对账卡：需求表达与契约质量对比" "$CYAN"
+demo_act "对比总结" "架构师对账卡：需求口径模糊 vs SDD 规格驱动开发效果对比" "$CYAN"
 echo -e "${WHITE}
 ┌──────────────────────┬──────────────────────────────┬──────────────────────────────┐
-│ 治理维度             │ 无 Harness (自然语言丢需求)  │ 有 Harness (SDD 规格驱动)    │
+│ 对比维度             │ 前者效果 (口语丢需求裸写)    │ 后者效果 (有 SDD 规格契约)   │
 ├──────────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ 需求交互模式         │ 讨好型顺从，默认脑补一切漏洞 │ 反客为主反向排雷，消灭隐性假设│
-│ 规格表达标准         │ 充满自然语言形容词 (合理/及时)│ EARS 规范 + GWT 机器可判定断言│
-│ 单元测试有效性       │ 纯粹拟合当前实现 (废单测)    │ 严格基于 AC 验收契约反向对账 │
-│ 变更与交付定界       │ 修改直接改代码，架构漂移     │ 规格是SSOT，代码只是规格下游 │
+│ 业务边界防卫         │ 负数金额放行，逻辑严重错乱   │ Zod safeParse 正数校验防御   │
+│ 状态机完整性         │ 从 NEW 强行跳跃办结(状态撕裂)│ 强制校验前置状态(PENDING_REV)│
+│ 测试与判定有效性     │ 假 Mock 自嗨，业务逻辑穿透   │ 机器可判定 GWT 契约反向对账  │
+│ 线上系统稳定性       │ 业务漏洞百出，数据严重污染   │ 状态流转严丝合缝，零脏数据   │
 └──────────────────────┴──────────────────────────────┴──────────────────────────────┘${RESET}"
 
 demo_quote "代码只是规格编译的下游。直接丢需求，等于把架构决策权外包给了大模型的脑补！"

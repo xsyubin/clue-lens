@@ -6,6 +6,10 @@
 import readline from "node:readline";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
 
 // 表名正则校验与白名单/黑名单
 const TABLE_NAME_PATTERN = /^[a-zA-Z0-9_]{1,64}$/;
@@ -343,6 +347,32 @@ function recordAudit(traceId, toolName, args, status, errorMsg, executionMs) {
   process.stderr.write(
     `[MCP Audit] TraceID=${traceId}, Tool=${toolName}, Operator=${operator}, Role=${role}, Status=${status}, Cost=${executionMs}ms\n`,
   );
+  try {
+    const dbPath = path.resolve(process.cwd(), process.env.DATABASE_URL ?? "./data/app.db");
+    if (fs.existsSync(dbPath)) {
+      const Database = require("better-sqlite3");
+      const db = new Database(dbPath);
+      db.prepare(`
+        INSERT INTO clue_mcp_audit_log (
+          id, trace_id, operator_id, role, tool_name, arguments, status, error_message, execution_ms, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        traceId,
+        operator,
+        role,
+        toolName,
+        JSON.stringify(args || {}).slice(0, 1000),
+        status,
+        errorMsg ? String(errorMsg).slice(0, 500) : null,
+        executionMs,
+        Math.floor(Date.now() / 1000)
+      );
+      db.close();
+    }
+  } catch (e) {
+    // 审计写入异常不阻断主流程
+  }
 }
 
 // JSON-RPC 消息调度器
