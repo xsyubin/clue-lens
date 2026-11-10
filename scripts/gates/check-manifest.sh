@@ -28,6 +28,7 @@ grep -q '^version: ' "${MANIFEST}" || fail "缺少 version"
 grep -q '^project: ' "${MANIFEST}" || fail "缺少 project"
 grep -q '^roles:' "${MANIFEST}" || fail "缺少 roles"
 grep -q '^execution:' "${MANIFEST}" || fail "缺少 execution"
+grep -q 'merge_policy:' "${MANIFEST}" || fail "缺少 execution.merge_policy"
 
 role_ids="$(awk '/^  - id: / {print $3}' "${MANIFEST}")"
 if [[ -z "${role_ids}" ]]; then

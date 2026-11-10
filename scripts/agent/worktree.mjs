@@ -200,7 +200,66 @@ switch (cmd) {
       process.exit(1);
     }
 
-    // 5. 快进合并并清理
+    // 5. 校验 Manifest 声明的合并策略 (merge_policy 门禁)
+    console.log("📋 [WORKTREE] 正在校验 Agent Manifest 声明的合并策略 (merge_policy)...");
+    const manifestPath = path.join(mainRoot, ".agents", "agent-manifest.yml");
+    let requiresEvidence = false;
+    if (fs.existsSync(manifestPath)) {
+      const manifestContent = fs.readFileSync(manifestPath, "utf8");
+      if (/merge_policy:.*evidence\/agent-runs\/<run-id>/i.test(manifestContent)) {
+        requiresEvidence = true;
+      }
+    }
+
+    if (requiresEvidence) {
+      const isManualOverride = process.env.ALLOW_MANUAL_MERGE === "1" || process.env.SKIP_AGENT_EVIDENCE === "1";
+      if (isManualOverride) {
+        console.warn("⚠️ [WORKTREE] 已启用 ALLOW_MANUAL_MERGE=1 人工终审放行，跳过 Agent 审计凭据检查。");
+      } else {
+        const wtEvidenceDir = path.join(wtDir, "evidence", "agent-runs", slug);
+        const mainEvidenceDir = path.join(mainRoot, "evidence", "agent-runs", slug);
+        const evidenceDir = fs.existsSync(wtEvidenceDir) ? wtEvidenceDir : (fs.existsSync(mainEvidenceDir) ? mainEvidenceDir : null);
+
+        if (!evidenceDir) {
+          console.error(`\n❌ [WORKTREE] 合并策略阻断（Manifest 门禁拦截）：`);
+          console.error(`   根据 .agents/agent-manifest.yml 的 merge_policy 要求：`);
+          console.error(`   "只合并通过质量审查且具备 evidence/agent-runs/<run-id> 记录的分支"`);
+          console.error(`   当前未找到针对任务 '${slug}' 的审计凭据目录：`);
+          console.error(`   - 预期路径: evidence/agent-runs/${slug}/<role>.md`);
+          console.error(`\n👉 修复指引：`);
+          console.error(`   1. 规范智能体执行：运行 ./scripts/agent/agent-run.sh 生成角色执行凭据；`);
+          console.error(`   2. 人工终审放行（Code Owner 授权）：指定 ALLOW_MANUAL_MERGE=1 ./scripts/agent/worktree.sh merge ${slug}\n`);
+          process.exit(1);
+        }
+
+        const evidenceFiles = fs.readdirSync(evidenceDir).filter((f) => f.endsWith(".md"));
+        if (evidenceFiles.length === 0) {
+          console.error(`\n❌ [WORKTREE] 合并策略阻断：审计目录 ${evidenceDir} 为空，缺少角色审计记录文件（如 fullstack-implementer.md）！`);
+          process.exit(1);
+        }
+
+        let hasPassed = false;
+        const failedFiles = [];
+        for (const file of evidenceFiles) {
+          const content = fs.readFileSync(path.join(evidenceDir, file), "utf8");
+          if (content.includes("🔴 违规拦截") || content.includes("🔴 FAIL")) {
+            failedFiles.push(file);
+          }
+          if (content.includes("🟢 合规通过") || content.includes("PASS") || content.includes("门禁判定: 🟢")) {
+            hasPassed = true;
+          }
+        }
+
+        if (failedFiles.length > 0 && !hasPassed) {
+          console.error(`\n❌ [WORKTREE] 合并策略阻断：审计凭据中包含未解决的违规拦截记录: ${failedFiles.join(", ")}`);
+          process.exit(1);
+        }
+
+        console.log(`✅ [WORKTREE] Manifest 合并策略验证通过（发现合规审计凭据: ${evidenceFiles.join(", ")}）`);
+      }
+    }
+
+    // 6. 快进合并并清理
     console.log("🚀 [WORKTREE] 正在快进合并到 main ...");
     runGit(["-C", mainRoot, "merge", "--ff-only", branch], mainRoot);
     spawnSync("git", ["-C", mainRoot, "worktree", "remove", "--force", wtDir], { stdio: "ignore" });
