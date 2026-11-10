@@ -16,6 +16,7 @@
   5. **敏感信息脱敏与安全底线:** 涉案当事人手机号等敏感信息在前端列表展示或非审计日志打印中必须统一调用 `maskMobile` 进行掩码脱敏（如 `138****0000`）。严禁向客户端泄露密码哈希、Secret 密钥或会话凭据。
   6. **MCP 探查与审计安全红线:** MCP 工具 `inspect_db_schema` 仅允许探查表结构元数据（DDL、列定义、外键、索引），严禁读取真实业务敏感数据；`GUEST` 角色禁止访问任何诊断工具；`ops_user_credential` 属于高危涉密黑名单，触发访问必须坚决阻断并告警。
   7. **代码修改与 Worktree 物理隔离红线:** 任何要提交的代码改动、特性开发或架构改造，严禁直接在主工作区 `main` 分支上动手；必须通过 `node scripts/agent/worktree.mjs new <slug>`（并发批量时使用 `node scripts/agent/agent-run.mjs` / Subagent `Workspace: "share"`）在独立 Git Worktree + 新分支中进行。测试全绿后通过 `node scripts/agent/worktree.mjs merge <slug>` 快进合并，从物理层面彻底消除文件互相覆盖、Git index 锁死与 SQLite 数据库锁死（详见 [rules/08-worktree-workflow.md](rules/08-worktree-workflow.md)）。
+  8. **UI 表单与设计系统防线:** 100% 采用 shadcn/ui 官方组件生态（基于 Radix UI 原语与 Lucide 矢量图标）。严禁在页面或业务组件中手写原生 `<select>`、原生 `<input type="date">`、原生复选/单选或纯文本字符关闭按钮（`✕`、`×`）；必须统一使用 `@/components/ui` 下的 `Select`、`DatePicker`、`Checkbox`、`RadioGroup` 与 `Dialog`，杜绝任何“粗糙原生 HTML 拼接感”（详见 [rules/05-coding-style.md](rules/05-coding-style.md)）。
 
 > [!NOTE]
 > 系统的分层调用时序、数据库 ER 关系与物理字段字典、部署拓扑及前端设计系统，以 [ARCHITECTURE.md](ARCHITECTURE.md) 为唯一事实源（SSOT）；本总纲侧重规则索引、安全军规与工程门禁。

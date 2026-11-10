@@ -155,6 +155,50 @@ if (shFiles.length > 0) {
   console.log("✅ [CLEAN] scripts/ 下无 shell 脚本，工具链全 Node.js ESM 化");
 }
 
+console.log("--- 9. 前端 UI 表单控件与设计系统规范检查 (禁止原生 select/date 散落与文本 ✕) ---");
+function scanComponentFiles(dir) {
+  let files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "node_modules" && entry.name !== ".next" && entry.name !== ".git") {
+        files.push(...scanComponentFiles(full));
+      }
+    } else if (/\.(tsx|jsx)$/.test(entry.name)) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+const componentFiles = scanComponentFiles(path.join(ROOT, "src"));
+let uiViolations = 0;
+for (const file of componentFiles) {
+  const rel = path.relative(ROOT, file);
+  // 排除 src/components/ui/ 基础原子组件自身
+  if (rel.startsWith("src/components/ui/")) continue;
+
+  const content = fs.readFileSync(file, "utf8");
+  if (content.match(/<select[\s\S]*?>/g)) {
+    console.error(`❌ [VIOLATION] ${rel} 存在违规原生 <select> 标签，请使用 @/components/ui/select 代替`);
+    failures += 1;
+    uiViolations += 1;
+  }
+  if (content.match(/type=["\x27]date["\x27]/g)) {
+    console.error(`❌ [VIOLATION] ${rel} 存在违规原生 <input type="date">，请使用 @/components/ui/date-picker 代替`);
+    failures += 1;
+    uiViolations += 1;
+  }
+  if (content.match(/>[✕×]<\/button>/g)) {
+    console.error(`❌ [VIOLATION] ${rel} 存在纯文本字符关闭按钮，请使用 lucide-react 的 <X /> 矢量图标代替`);
+    failures += 1;
+    uiViolations += 1;
+  }
+}
+if (uiViolations === 0) {
+  console.log("✅ [CLEAN] 全工程业务组件符合 shadcn/ui 表单设计系统规范，无违规原生控件");
+}
+
 console.log("==================================================================");
 if (failures > 0) {
   console.error(`❌ 一致性校验未通过，共发现 ${failures} 处不一致！`);
