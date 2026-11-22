@@ -128,9 +128,11 @@ checkFileExists("scripts/gates/check-manifest.mjs");
 checkFileExists("scripts/agent/agent-run.mjs");
 checkFileExists("scripts/agent/worktree.mjs");
 checkFileExists("scripts/agent/pre-tool-guard.mjs");
+checkFileExists("scripts/overnight.sh");
+checkFileExists("scripts/automation/overnight.mjs");
 checkContentContains(".claude/settings.json", "pre-tool-guard.mjs", "Claude Code PreToolUse Hook 配置");
 
-console.log("--- 8. Shell 脚本禁令检查 (scripts/ 下不允许 .sh，允许 scripts/demo 教学演示) ---");
+console.log("--- 8. Shell 脚本禁令检查 (仅允许受控的 overnight 入口与 scripts/demo 教学演示) ---");
 function findShFiles(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -146,13 +148,15 @@ function findShFiles(dir) {
   return out;
 }
 const shFiles = findShFiles(path.join(ROOT, "scripts"));
-if (shFiles.length > 0) {
-  for (const f of shFiles) {
+const allowedShellFiles = new Set(["scripts/overnight.sh"]);
+const unexpectedShellFiles = shFiles.filter((file) => !allowedShellFiles.has(path.relative(ROOT, file)));
+if (unexpectedShellFiles.length > 0) {
+  for (const f of unexpectedShellFiles) {
     console.error(`❌ [VIOLATION] scripts/ 下禁止新增 shell 脚本（请使用 Node.js ESM）: ${path.relative(ROOT, f)}`);
     failures += 1;
   }
 } else {
-  console.log("✅ [CLEAN] scripts/ 下无 shell 脚本，工具链全 Node.js ESM 化");
+  console.log("✅ [CLEAN] 仅发现受控 overnight.sh 与 scripts/demo 教学脚本");
 }
 
 console.log("--- 9. 前端 UI 表单控件与设计系统规范检查 (禁止原生 select/date 散落与文本 ✕) ---");

@@ -31,3 +31,8 @@ next-env.d.ts
 
 ### Worktrees ###
 .worktrees/
+
+# Overnight scheduler runtime state is durable local control data, not source.
+spec/**/automation-state.json
+spec/**/.automation.lock
+spec/**/automation-logs/

@@ -2,7 +2,7 @@
 // ==============================================================================
 // scripts/agent/worktree.mjs
 // 跨平台智能体 Worktree 生命周期管理 (Node.js ESM)
-// 语法：node scripts/agent/worktree.mjs new|merge|drop <slug>
+// 语法：node scripts/agent/worktree.mjs new <slug> [--base REF]
 // ==============================================================================
 import fs from "node:fs";
 import path from "node:path";
@@ -14,18 +14,30 @@ const __dirname = path.dirname(__filename);
 
 function showUsage() {
   console.error(`用法：
-  node scripts/agent/worktree.mjs new <slug>     创建隔离 worktree 并初始化依赖沙盒
+  node scripts/agent/worktree.mjs new <slug> [--base REF]
+                                               创建隔离 worktree 并初始化依赖沙盒
   node scripts/agent/worktree.mjs merge <slug>   验证通过后快进合并到 main 并清理
   node scripts/agent/worktree.mjs drop <slug>    放弃改动：清理 worktree 与分支`);
   process.exit(2);
 }
 
 const args = process.argv.slice(2);
-if (args.length !== 2) {
+const cmd = args.shift();
+const slug = args.shift();
+let baseRef = "main";
+
+while (args.length > 0) {
+  const arg = args.shift();
+  if (arg === "--base" && args.length > 0) {
+    baseRef = args.shift();
+    continue;
+  }
   showUsage();
 }
 
-const [cmd, slug] = args;
+if (!cmd || !slug) {
+  showUsage();
+}
 
 // 校验 slug 格式
 if (!slug || !/^[A-Za-z0-9._-]+$/.test(slug)) {
@@ -83,10 +95,16 @@ switch (cmd) {
       process.exit(1);
     }
 
-    console.log(`🌱 [WORKTREE] 正在从 main 创建隔离工作树: ${branch} -> ${wtDir} ...`);
+    const baseCheck = spawnSync("git", ["-C", mainRoot, "rev-parse", "--verify", baseRef]);
+    if (baseCheck.status !== 0) {
+      console.error(`❌ [WORKTREE] 指定基线不存在或不可解析: ${baseRef}`);
+      process.exit(1);
+    }
+
+    console.log(`🌱 [WORKTREE] 正在从 ${baseRef} 创建隔离工作树: ${branch} -> ${wtDir} ...`);
     fs.mkdirSync(parentDir, { recursive: true });
 
-    runGit(["-C", mainRoot, "worktree", "add", "-b", branch, wtDir, "main"], mainRoot);
+    runGit(["-C", mainRoot, "worktree", "add", "-b", branch, wtDir, baseRef], mainRoot);
 
     // 1. 软链共享 node_modules（Windows 使用 junction，macOS/Linux 使用 dir）
     const nmSrc = path.join(mainRoot, "node_modules");

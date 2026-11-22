@@ -28,7 +28,7 @@ roles:
     outputs:
       - "src/"
       - "evidence/agent-runs/<run-id>/fullstack-implementer.md"
-    allowed_paths: ["src/", "data/", "scripts/"]
+    allowed_paths: ["src/", "data/", "scripts/", "spec/", "evidence/"]
     forbidden_paths: [".env", ".git/"]
     checks: ["typecheck", "check-security", "check-consistency"]
     commands: ["node scripts/gates/check-security.mjs", "node scripts/gates/check-consistency.mjs"]
@@ -42,7 +42,7 @@ roles:
     outputs:
       - "evidence/agent-runs/<run-id>/quality-reviewer.md"
       - "evidence/deterministic-review-report.md"
-    allowed_paths: ["evidence/", "scripts/", "rules/"]
+    allowed_paths: ["evidence/", "scripts/", "rules/", "spec/"]
     forbidden_paths: ["src/"]
     checks: ["check-secrets", "check-mcp", "review"]
     commands: ["node scripts/gates/check-secrets.mjs", "node scripts/gates/check-mcp.mjs", "node scripts/review.mjs"]

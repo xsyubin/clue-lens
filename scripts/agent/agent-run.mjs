@@ -166,7 +166,13 @@ function main() {
 
   fs.mkdirSync(parentDir, { recursive: true });
   const worktree = path.join(parentDir, `clue-lens-${args.name}`);
-  const newRes = spawnSync(process.execPath, [path.join(ROOT, "scripts", "agent", "worktree.mjs"), "new", args.name], {
+  const newRes = spawnSync(process.execPath, [
+    path.join(ROOT, "scripts", "agent", "worktree.mjs"),
+    "new",
+    args.name,
+    "--base",
+    args.base,
+  ], {
     stdio: "inherit",
     env: { ...process.env, WORKTREE_PARENT: parentDir },
   });
