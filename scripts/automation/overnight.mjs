@@ -408,6 +408,11 @@ function dropWorktree(slug) {
   });
 }
 
+function resetWorktreeForRetry(cwd, base) {
+  runGit(["reset", "--hard", base], cwd);
+  runGit(["clean", "-fd"], cwd);
+}
+
 function commitEvidence(cwd, file, content, message) {
   fs.mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true });
   fs.writeFileSync(path.join(cwd, file), content, "utf8");
@@ -448,7 +453,17 @@ async function processTask({ state, stateFile, specDir, integrationDir, task, ma
         taskState.lastHeartbeat = now();
         saveState(stateFile, state);
         const result = await runTrackedAgent({ state, stateFile, taskState, provider: provider.agent, model: provider.model, prompt: taskPrompt("fullstack-implementer", specPath, task), cwd: builderDir, logFile: builderLog });
-        if (!result.ok) return { ...result, failureType: classifyFailure(result) };
+        if (!result.ok) {
+          const failureType = classifyFailure(result);
+          if (attempt < maxAttempts && failureType !== "state-corrupt") {
+            try {
+              resetWorktreeForRetry(builderDir, state.integrationBranch);
+            } catch (error) {
+              return { ...result, failureType: "worktree-conflict", error };
+            }
+          }
+          return { ...result, failureType };
+        }
         return result;
       },
       onAttempt: ({ attempt, provider }) => {
@@ -501,7 +516,17 @@ async function processTask({ state, stateFile, specDir, integrationDir, task, ma
         taskState.lastHeartbeat = now();
         saveState(stateFile, state);
         const result = await runTrackedAgent({ state, stateFile, taskState, provider: provider.agent, model: provider.model, prompt: taskPrompt("quality-reviewer", specPath, task), cwd: reviewerDir, logFile: reviewerLog });
-        if (!result.ok) return { ...result, failureType: classifyFailure(result) };
+        if (!result.ok) {
+          const failureType = classifyFailure(result);
+          if (attempt < maxAttempts && failureType !== "state-corrupt") {
+            try {
+              resetWorktreeForRetry(reviewerDir, builderBranch);
+            } catch (error) {
+              return { ...result, failureType: "worktree-conflict", error };
+            }
+          }
+          return { ...result, failureType };
+        }
         return result;
       },
     });
@@ -627,6 +652,9 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, idleMs));
     }
     console.log(`已达到本次运行任务上限 ${maxTasks}。下次由 supervisor 或 resume 继续。`);
+    state.status = allCompleted(state) ? "completed" : "running";
+    saveState(stateFile, state);
+    if (state.status !== "completed") process.exitCode = 75;
   } finally {
     if (integrationDir) removeIntegrationWorktree(integrationDir);
     releaseLock();

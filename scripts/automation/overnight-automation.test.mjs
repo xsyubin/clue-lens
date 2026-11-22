@@ -43,18 +43,20 @@ test("超时、限流、网络和 worktree 冲突会被分类并触发候选链�
   assert.equal(automation.classifyFailure({ stderr: "ECONNRESET network" }), "network");
   assert.equal(automation.classifyFailure({ stderr: "worktree already exists" }), "worktree-conflict");
 
-  const seen = [];
-  const result = await automation.runWithRetry({
-    chain: [{ agent: "codex", model: "m1" }, { agent: "claude", model: "m2" }],
-    maxAttempts: 2,
-    sleep: async () => {},
-    runner: async ({ provider }) => {
-      seen.push(provider.agent);
-      return seen.length === 1 ? { ok: false, failureType: "rate-limit" } : { ok: true };
-    },
-  });
-  assert.deepEqual(seen, ["codex", "claude"]);
-  assert.equal(result.provider.agent, "claude");
+  for (const failureType of ["rate-limit", "network", "worktree-conflict"]) {
+    const seen = [];
+    const result = await automation.runWithRetry({
+      chain: [{ agent: "codex", model: "m1" }, { agent: "claude", model: "m2" }],
+      maxAttempts: 2,
+      sleep: async () => {},
+      runner: async ({ provider }) => {
+        seen.push(provider.agent);
+        return seen.length === 1 ? { ok: false, failureType } : { ok: true };
+      },
+    });
+    assert.deepEqual(seen, ["codex", "claude"]);
+    assert.equal(result.provider.agent, "claude");
+  }
 });
 
 test("Agent 进程超时会被终止并留下失败结果", async () => {
