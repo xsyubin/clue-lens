@@ -36,3 +36,5 @@ next-env.d.ts
 spec/**/automation-state.json
 spec/**/.automation.lock
 spec/**/automation-logs/
+spec/**/.sdd-bootstrap-state.json
+spec/**/bootstrap-logs/

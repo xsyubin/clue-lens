@@ -130,6 +130,8 @@ checkFileExists("scripts/agent/worktree.mjs");
 checkFileExists("scripts/agent/pre-tool-guard.mjs");
 checkFileExists("scripts/overnight.sh");
 checkFileExists("scripts/automation/overnight.mjs");
+checkFileExists("scripts/spec-bootstrap.sh");
+checkFileExists("scripts/automation/spec-bootstrap.mjs");
 checkContentContains(".claude/settings.json", "pre-tool-guard.mjs", "Claude Code PreToolUse Hook 配置");
 
 console.log("--- 8. Shell 脚本禁令检查 (仅允许受控的 overnight 入口与 scripts/demo 教学演示) ---");
@@ -148,7 +150,7 @@ function findShFiles(dir) {
   return out;
 }
 const shFiles = findShFiles(path.join(ROOT, "scripts"));
-const allowedShellFiles = new Set(["scripts/overnight.sh"]);
+const allowedShellFiles = new Set(["scripts/overnight.sh", "scripts/spec-bootstrap.sh"]);
 const unexpectedShellFiles = shFiles.filter((file) => !allowedShellFiles.has(path.relative(ROOT, file)));
 if (unexpectedShellFiles.length > 0) {
   for (const f of unexpectedShellFiles) {
@@ -156,7 +158,7 @@ if (unexpectedShellFiles.length > 0) {
     failures += 1;
   }
 } else {
-  console.log("✅ [CLEAN] 仅发现受控 overnight.sh 与 scripts/demo 教学脚本");
+  console.log("✅ [CLEAN] 仅发现受控 SDD 自动化入口与 scripts/demo 教学脚本");
 }
 
 console.log("--- 9. 前端 UI 表单控件与设计系统规范检查 (禁止原生 select/date 散落与文本 ✕) ---");

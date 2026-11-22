@@ -1,5 +1,20 @@
 # Overnight SDD 自动调度
 
+只有一句话原始需求时，先使用 `scripts/spec-bootstrap.sh` 生成规格草稿：
+
+```bash
+scripts/spec-bootstrap.sh spec/new-feature run --requirement "建设一个线索重复经营分析页面"
+scripts/spec-bootstrap.sh spec/new-feature status
+scripts/spec-bootstrap.sh spec/new-feature approve
+```
+
+bootstrap 会在独立 `agent/spec-bootstrap-<run-id>` 交接分支中依次生成 `clarification.md`、`requirements.md`、`design.md` 和 `tasks.md`。它会停在人工确认门禁，不会自动修改 `main`。确认后把交接分支作为实现基线：
+
+```bash
+OVERNIGHT_BASELINE=agent/spec-bootstrap-<run-id> \
+scripts/overnight.sh spec/new-feature run
+```
+
 统一入口是 `scripts/overnight.sh`。规格目录必须在启动时显式传入，调度器不会猜测根目录文件。
 
 ```bash

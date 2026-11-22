@@ -42,6 +42,21 @@ export function resolveSpecDir(specPath = process.env.SPEC_PATH, root = ROOT) {
   return specDir;
 }
 
+function verifyBootstrapApproval(specDir) {
+  const bootstrapStateFile = path.join(specDir, ".sdd-bootstrap-state.json");
+  if (!fs.existsSync(bootstrapStateFile)) return;
+  let bootstrapState;
+  try {
+    bootstrapState = JSON.parse(fs.readFileSync(bootstrapStateFile, "utf8"));
+  } catch (error) {
+    throw new Error(".sdd-bootstrap-state.json 损坏，无法进入实现阶段: " + error.message);
+  }
+  if (bootstrapState.status !== "approved") {
+    throw new Error("规格草稿尚未通过人工确认，当前状态为 " + bootstrapState.status +
+      "。请先运行 spec-bootstrap.sh " + bootstrapState.specPath + " approve");
+  }
+}
+
 function now() {
   return new Date().toISOString();
 }
@@ -615,6 +630,7 @@ async function main() {
     return;
   }
   if (!["run", "resume"].includes(mode)) throw new Error(`未知模式: ${mode}`);
+  verifyBootstrapApproval(specDir);
   const releaseLock = acquireLock(lockFile, { specPath, mode });
   let integrationDir;
   try {
