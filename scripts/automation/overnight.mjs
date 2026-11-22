@@ -438,6 +438,7 @@ async function processTask({ state, stateFile, specDir, integrationDir, task, ma
     taskState.worktree = builderDir;
     saveState(stateFile, state);
     const builderLog = path.join(specDir, "automation-logs", `${taskSlug}-builder.log`);
+    fs.mkdirSync(path.dirname(builderLog), { recursive: true });
     const builderResult = await runWithRetry({
       chain: roleChain("fullstack-implementer"),
       maxAttempts,
@@ -490,6 +491,7 @@ async function processTask({ state, stateFile, specDir, integrationDir, task, ma
     state.phase = "quality-reviewer";
     saveState(stateFile, state);
     const reviewerLog = path.join(specDir, "automation-logs", `${taskSlug}-reviewer.log`);
+    fs.mkdirSync(path.dirname(reviewerLog), { recursive: true });
     const reviewerResult = await runWithRetry({
       chain: roleChain("quality-reviewer"),
       maxAttempts,
