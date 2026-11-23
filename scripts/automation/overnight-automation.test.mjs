@@ -43,6 +43,11 @@ test("超时、限流、网络和 worktree 冲突会被分类并触发候选链�
   assert.equal(automation.classifyFailure({ stderr: "ECONNRESET network" }), "network");
   assert.equal(automation.classifyFailure({ stderr: "worktree already exists" }), "worktree-conflict");
   assert.equal(automation.classifyFailure({ stdout: "讨论 automation-state.json、network 和 worktree" }), "provider-error");
+  assert.equal(automation.classifyFailure({ code: 0, stderr: "fatal: network error" }), "provider-error");
+  assert.equal(automation.classifyFailure({ code: 1, stdout: JSON.stringify({ type: "turn.failed", error: { message: "HTTP 429 rate limit" } }) }), "rate-limit");
+  assert.equal(automation.classifyFailure({ code: 1, stdout: "HTTP 429 Too Many Requests" }), "rate-limit");
+  assert.equal(automation.classifyFailure({ code: 1, stderr: "normal mention of automation-state.json" }), "provider-error");
+  assert.equal(automation.classifyFailure({ code: 1, stderr: "automation-state.json is corrupt" }), "state-corrupt");
 
   for (const failureType of ["rate-limit", "network", "worktree-conflict"]) {
     const seen = [];
@@ -82,6 +87,20 @@ test("允许路径匹配要求目录边界", () => {
   const role = { id: "test", allowed_paths: ["spec/clue-lens"], forbidden_paths: [] };
   assert.doesNotThrow(() => automation.validateAllowedPaths(["spec/clue-lens/tasks.md"], role));
   assert.throws(() => automation.validateAllowedPaths(["spec/clue-lens-evil/tasks.md"], role), /未允许路径/);
+});
+
+test("glob 路径匹配支持 ** 跨目录与零层目录，并保持单星号不跨目录", () => {
+  const recursive = { id: "glob", allowed_paths: ["src/**"], forbidden_paths: [] };
+  for (const file of ["src/a.ts", "src/a/b.ts", "src/"]) {
+    assert.doesNotThrow(() => automation.validateAllowedPaths([file], recursive));
+  }
+  const basename = { id: "glob", allowed_paths: ["**/secrets.json"], forbidden_paths: [] };
+  for (const file of ["secrets.json", "a/secrets.json", "a/b/secrets.json"]) {
+    assert.doesNotThrow(() => automation.validateAllowedPaths([file], basename));
+  }
+  const single = { id: "glob", allowed_paths: ["src/*"], forbidden_paths: [] };
+  assert.doesNotThrow(() => automation.validateAllowedPaths(["src/a.ts"], single));
+  assert.throws(() => automation.validateAllowedPaths(["src/a/b.ts"], single), /未允许路径/);
 });
 
 test("Agent 进程超时会被终止并留下失败结果", async () => {

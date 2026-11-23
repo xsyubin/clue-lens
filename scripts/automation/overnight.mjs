@@ -21,7 +21,7 @@ const MANIFEST_FILE = path.join(ROOT, ".agents", "agent-manifest.yml");
 const DEFAULT_TIMEOUT_MS = Number(process.env.OVERNIGHT_TIMEOUT_MS || 45 * 60 * 1000);
 const DEFAULT_MAX_ATTEMPTS = Number(process.env.OVERNIGHT_MAX_ATTEMPTS || 3);
 const DEFAULT_RETRY_BASE_MS = Number(process.env.OVERNIGHT_RETRY_BASE_MS || 10_000);
-const DEFAULT_RATE_LIMIT_RETRIES = Number(process.env.OVERNIGHT_RATE_LIMIT_RETRIES || 3);
+const DEFAULT_RATE_LIMIT_RETRIES = Number(process.env.OVERNIGHT_RATE_LIMIT_RETRIES || 8);
 const DEFAULT_RATE_LIMIT_BASE_MS = Number(process.env.OVERNIGHT_RATE_LIMIT_BASE_MS || 60_000);
 const MAX_CAPTURED_OUTPUT_BYTES = Number(process.env.OVERNIGHT_MAX_CAPTURED_OUTPUT_BYTES || 64 * 1024);
 const EXIT_BLOCKED = 78;
@@ -205,7 +205,24 @@ export function acquireLock(lockFile, metadata = {}) {
 
 export function classifyFailure(result) {
   if (result?.timedOut || result?.signal === "SIGTERM" || result?.signal === "SIGKILL") return "timeout";
-  const text = `${result?.stderr || ""}\n${result?.error?.message || ""}`.toLowerCase();
+  if (result?.code === 0) return "provider-error";
+  const structured = [];
+  for (const line of String(result?.stdout || "").split(/\r?\n/)) {
+    try {
+      const event = JSON.parse(line);
+      if (["error", "turn.failed"].includes(event?.type)) {
+        structured.push(event.error?.message || event.message || JSON.stringify(event.error || event));
+      }
+    } catch {
+      // Codex JSON mode emits one JSON object per line; ignore non-JSON output.
+    }
+  }
+  const stderrDiagnostics = String(result?.stderr || "")
+    .split(/\r?\n/)
+    .filter((line) => /error|failed|fatal|exception|corrupt|invalid|malformed|损坏|429|rate.?limit|quota|too many requests|capacity|already exists|cannot lock ref|index\.lock|econn|enotfound|etimedout|connection.*(?:reset|refused|failed)|network.*(?:error|failed|unreachable)/i.test(line))
+    .join("\n");
+  const stdoutRateLimit = String(result?.stdout || "").match(/\b429\b|rate limit exceeded|too many requests|quota exceeded|capacity exhausted/i)?.[0] || "";
+  const text = `${stderrDiagnostics}\n${structured.join("\n")}\n${stdoutRateLimit}\n${result?.error?.message || ""}`.toLowerCase();
   if (/automation-state\.json.*(?:corrupt|invalid|malformed|损坏)|(?:state file|json).*(?:corrupt|invalid|malformed|损坏)/.test(text)) return "state-corrupt";
   if (/worktree.*(?:already exists|conflict|locked|lock|failed|error)|index\.lock|cannot lock ref|branch .* already exists/.test(text)) return "worktree-conflict";
   if (/\b(?:429|rate.?limit|quota exceeded|too many requests|capacity)\b/.test(text)) return "rate-limit";
@@ -295,7 +312,7 @@ export async function runWithRetry({ chain, maxAttempts = DEFAULT_MAX_ATTEMPTS, 
 
 function agentCommand(provider, model, prompt) {
   if (provider === "codex") {
-    return { command: "codex", args: ["exec", "--sandbox", "workspace-write", ...(model ? ["--model", model] : []), prompt] };
+    return { command: "codex", args: ["exec", "--json", "--sandbox", "workspace-write", ...(model ? ["--model", model] : []), prompt] };
   }
   return {
     command: "claude",
@@ -349,10 +366,12 @@ function pathMatches(file, pattern) {
     return normalizedFile === normalizedPattern || normalizedFile.startsWith(`${normalizedPattern}/`);
   }
   const escaped = normalizedPattern
-    .replace(/\*\*/g, "\u0000")
+    .replace(/\*\*\//g, "\u0000")
+    .replace(/\*\*/g, "\u0001")
     .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-    .replace(/\u0000/g, ".*")
-    .replace(/\*/g, "[^/]*");
+    .replace(/\*/g, "[^/]*")
+    .replace(/\u0000/g, "(?:.*/)?")
+    .replace(/\u0001/g, ".*");
   return new RegExp(`^${escaped}$`).test(normalizedFile);
 }
 
@@ -699,7 +718,13 @@ async function main() {
       const currentTasks = readTasks(path.join(integrationDir, specPath, "tasks.md")).tasks;
       const task = currentTasks.find((item) => item.mark === " " || item.mark === "R" || item.mark === "?");
       if (!task) throw new Error("任务清单状态无法推进，可能存在未支持的状态或状态文件损坏");
-      if (state.tasks[task.id]?.attempts >= DEFAULT_MAX_ATTEMPTS) throw new Error(`任务 ${task.id} 已达到最大尝试次数`);
+      if (state.tasks[task.id]?.attempts >= DEFAULT_MAX_ATTEMPTS) {
+        state.tasks[task.id].phase = "blocked";
+        state.currentTaskId = task.id;
+        state.status = "blocked";
+        saveState(stateFile, state);
+        throw new Error(`任务 ${task.id} 已达到最大尝试次数`);
+      }
       await processTask({ state, stateFile, specDir, integrationDir, task, maxAttempts: DEFAULT_MAX_ATTEMPTS });
       console.log(`任务 ${task.id} 已处理。集成分支为 ${state.integrationBranch}`);
       await new Promise((resolve) => setTimeout(resolve, idleMs));

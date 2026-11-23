@@ -30,6 +30,7 @@ scripts/overnight.sh spec/clue-lens resume
 ```bash
 OVERNIGHT_BASELINE=main \
 OVERNIGHT_MAX_ATTEMPTS=3 \
+OVERNIGHT_RATE_LIMIT_RETRIES=8 \
 OVERNIGHT_TIMEOUT_MS=2700000 \
 OVERNIGHT_FULLSTACK_IMPLEMENTER_CHAIN='codex:gpt-6.2-sol,claude:sonnet,codex:gpt-6.2-sol' \
 OVERNIGHT_QUALITY_REVIEWER_CHAIN='claude:sonnet,codex:gpt-6.2-sol,claude:sonnet' \
