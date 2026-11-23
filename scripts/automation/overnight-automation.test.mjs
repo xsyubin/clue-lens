@@ -42,6 +42,7 @@ test("超时、限流、网络和 worktree 冲突会被分类并触发候选链�
   assert.equal(automation.classifyFailure({ stderr: "HTTP 429 rate limit" }), "rate-limit");
   assert.equal(automation.classifyFailure({ stderr: "ECONNRESET network" }), "network");
   assert.equal(automation.classifyFailure({ stderr: "worktree already exists" }), "worktree-conflict");
+  assert.equal(automation.classifyFailure({ stdout: "讨论 automation-state.json、network 和 worktree" }), "provider-error");
 
   for (const failureType of ["rate-limit", "network", "worktree-conflict"]) {
     const seen = [];
@@ -57,6 +58,30 @@ test("超时、限流、网络和 worktree 冲突会被分类并触发候选链�
     assert.deepEqual(seen, ["codex", "claude"]);
     assert.equal(result.provider.agent, "claude");
   }
+});
+
+test("限流重试不消耗普通尝试次数并使用长退避", async () => {
+  const seen = [];
+  const delays = [];
+  const result = await automation.runWithRetry({
+    chain: [{ agent: "codex", model: "m1" }, { agent: "claude", model: "m2" }],
+    maxAttempts: 1,
+    maxRateLimitRetries: 1,
+    sleep: async (delay) => delays.push(delay),
+    runner: async ({ attempt, provider }) => {
+      seen.push({ attempt, provider: provider.agent });
+      return seen.length === 1 ? { ok: false, failureType: "rate-limit" } : { ok: true };
+    },
+  });
+  assert.equal(result.provider.agent, "claude");
+  assert.deepEqual(seen.map((entry) => entry.attempt), [1, 1]);
+  assert.ok(delays[0] >= 60_000);
+});
+
+test("允许路径匹配要求目录边界", () => {
+  const role = { id: "test", allowed_paths: ["spec/clue-lens"], forbidden_paths: [] };
+  assert.doesNotThrow(() => automation.validateAllowedPaths(["spec/clue-lens/tasks.md"], role));
+  assert.throws(() => automation.validateAllowedPaths(["spec/clue-lens-evil/tasks.md"], role), /未允许路径/);
 });
 
 test("Agent 进程超时会被终止并留下失败结果", async () => {

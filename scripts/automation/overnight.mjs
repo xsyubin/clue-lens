@@ -21,6 +21,10 @@ const MANIFEST_FILE = path.join(ROOT, ".agents", "agent-manifest.yml");
 const DEFAULT_TIMEOUT_MS = Number(process.env.OVERNIGHT_TIMEOUT_MS || 45 * 60 * 1000);
 const DEFAULT_MAX_ATTEMPTS = Number(process.env.OVERNIGHT_MAX_ATTEMPTS || 3);
 const DEFAULT_RETRY_BASE_MS = Number(process.env.OVERNIGHT_RETRY_BASE_MS || 10_000);
+const DEFAULT_RATE_LIMIT_RETRIES = Number(process.env.OVERNIGHT_RATE_LIMIT_RETRIES || 3);
+const DEFAULT_RATE_LIMIT_BASE_MS = Number(process.env.OVERNIGHT_RATE_LIMIT_BASE_MS || 60_000);
+const MAX_CAPTURED_OUTPUT_BYTES = Number(process.env.OVERNIGHT_MAX_CAPTURED_OUTPUT_BYTES || 64 * 1024);
+const EXIT_BLOCKED = 78;
 const ROLE_DEFAULT_CHAINS = {
   "spec-analyst": "codex,claude,codex",
   "fullstack-implementer": "codex,claude,codex",
@@ -201,16 +205,20 @@ export function acquireLock(lockFile, metadata = {}) {
 
 export function classifyFailure(result) {
   if (result?.timedOut || result?.signal === "SIGTERM" || result?.signal === "SIGKILL") return "timeout";
-  const text = `${result?.stderr || ""}\n${result?.stdout || ""}\n${result?.error?.message || ""}`.toLowerCase();
-  if (/state.*corrupt|automation-state|json.*invalid/.test(text)) return "state-corrupt";
-  if (/worktree|index\.lock|already exists|branch.*exists|cannot lock ref/.test(text)) return "worktree-conflict";
-  if (/429|rate.?limit|quota|too many requests|capacity/.test(text)) return "rate-limit";
-  if (/network|econn|enotfound|fetch failed|connection|socket|dns/.test(text)) return "network";
+  const text = `${result?.stderr || ""}\n${result?.error?.message || ""}`.toLowerCase();
+  if (/automation-state\.json.*(?:corrupt|invalid|malformed|损坏)|(?:state file|json).*(?:corrupt|invalid|malformed|损坏)/.test(text)) return "state-corrupt";
+  if (/worktree.*(?:already exists|conflict|locked|lock|failed|error)|index\.lock|cannot lock ref|branch .* already exists/.test(text)) return "worktree-conflict";
+  if (/\b(?:429|rate.?limit|quota exceeded|too many requests|capacity)\b/.test(text)) return "rate-limit";
+  if (/\b(?:econnreset|econnrefused|enotfound|etimedout|eai_again)\b|network\s+(?:error|failure|unreachable)|(?:connection|socket|dns).*(?:error|failed|reset|refused|timed out)/.test(text)) return "network";
   return "provider-error";
 }
 
 export function backoffDelay(attempt, base = DEFAULT_RETRY_BASE_MS) {
   return Math.min(base * (2 ** Math.max(0, attempt - 1)), 10 * 60 * 1000);
+}
+
+export function rateLimitDelay(attempt, base = DEFAULT_RATE_LIMIT_BASE_MS) {
+  return Math.min(base * (2 ** Math.max(0, attempt - 1)), 30 * 60 * 1000);
 }
 
 export function parseProviderChain(raw, fallback) {
@@ -257,16 +265,27 @@ export function taskTransition(before, after, expected) {
   return transition;
 }
 
-export async function runWithRetry({ chain, maxAttempts = DEFAULT_MAX_ATTEMPTS, runner, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), onAttempt = () => {} }) {
+export async function runWithRetry({ chain, maxAttempts = DEFAULT_MAX_ATTEMPTS, maxRateLimitRetries = DEFAULT_RATE_LIMIT_RETRIES, runner, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), onAttempt = () => {} }) {
   let lastFailure = null;
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const provider = chain[(attempt - 1) % chain.length];
+  let attempt = 0;
+  let invocation = 0;
+  let rateLimitRetries = 0;
+  while (attempt < maxAttempts) {
+    attempt += 1;
+    const provider = chain[invocation % chain.length];
+    invocation += 1;
     onAttempt({ attempt, provider });
     const result = await runner({ attempt, provider });
     if (result?.ok) return { ...result, attempt, provider };
     const failureType = result?.failureType || classifyFailure(result);
     lastFailure = { ...result, failureType, attempt, provider };
     if (failureType === "state-corrupt") throw new Error("状态文件损坏，停止自动重试");
+    if (failureType === "rate-limit" && rateLimitRetries < maxRateLimitRetries) {
+      rateLimitRetries += 1;
+      attempt -= 1;
+      await sleep(rateLimitDelay(rateLimitRetries));
+      continue;
+    }
     if (attempt < maxAttempts) await sleep(backoffDelay(attempt));
   }
   const error = new Error(`Agent 在 ${maxAttempts} 次尝试后仍失败: ${lastFailure?.failureType || "unknown"}`);
@@ -303,8 +322,12 @@ export function runAgentProcess({ provider, model, prompt, cwd, logFile, timeout
       child.kill("SIGTERM");
       setTimeout(() => { if (!finished) child.kill("SIGKILL"); }, 5_000).unref();
     }, timeoutMs);
-    child.stdout.on("data", (chunk) => { stdout += chunk; log.write(chunk); });
-    child.stderr.on("data", (chunk) => { stderr += chunk; log.write(chunk); });
+    const appendOutput = (current, chunk) => {
+      const value = current + chunk.toString();
+      return value.length > MAX_CAPTURED_OUTPUT_BYTES ? value.slice(-MAX_CAPTURED_OUTPUT_BYTES) : value;
+    };
+    child.stdout.on("data", (chunk) => { stdout = appendOutput(stdout, chunk); log.write(chunk); });
+    child.stderr.on("data", (chunk) => { stderr = appendOutput(stderr, chunk); log.write(chunk); });
     child.on("error", (error) => { clearTimeout(timer); log.end(); resolve({ ok: false, error, stdout, stderr, timedOut }); });
     child.on("close", (code, signal) => {
       finished = true;
@@ -316,8 +339,21 @@ export function runAgentProcess({ provider, model, prompt, cwd, logFile, timeout
 }
 
 function pathMatches(file, pattern) {
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}`).test(file);
+  const normalizedFile = file.replaceAll("\\", "/");
+  const normalizedPattern = pattern.replaceAll("\\", "/");
+  if (normalizedPattern.endsWith("/")) {
+    const directory = normalizedPattern.slice(0, -1);
+    return normalizedFile === directory || normalizedFile.startsWith(normalizedPattern);
+  }
+  if (!normalizedPattern.includes("*")) {
+    return normalizedFile === normalizedPattern || normalizedFile.startsWith(`${normalizedPattern}/`);
+  }
+  const escaped = normalizedPattern
+    .replace(/\*\*/g, "\u0000")
+    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+    .replace(/\u0000/g, ".*")
+    .replace(/\*/g, "[^/]*");
+  return new RegExp(`^${escaped}$`).test(normalizedFile);
 }
 
 function roleFromManifest(roleId) {
@@ -525,7 +561,7 @@ async function processTask({ state, stateFile, specDir, integrationDir, task, ma
     const reviewerResult = await runWithRetry({
       chain: roleChain("quality-reviewer"),
       maxAttempts,
-      runner: async ({ provider }) => {
+      runner: async ({ attempt: retryAttempt, provider }) => {
         taskState.agent = provider.agent;
         taskState.model = provider.model;
         taskState.lastHeartbeat = now();
@@ -533,7 +569,7 @@ async function processTask({ state, stateFile, specDir, integrationDir, task, ma
         const result = await runTrackedAgent({ state, stateFile, taskState, provider: provider.agent, model: provider.model, prompt: taskPrompt("quality-reviewer", specPath, task), cwd: reviewerDir, logFile: reviewerLog });
         if (!result.ok) {
           const failureType = classifyFailure(result);
-          if (attempt < maxAttempts && failureType !== "state-corrupt") {
+          if (retryAttempt < maxAttempts && failureType !== "state-corrupt") {
             try {
               resetWorktreeForRetry(reviewerDir, builderBranch);
             } catch (error) {
@@ -595,7 +631,7 @@ function installSupervisor(specPath) {
   if (process.platform === "darwin") {
     const target = path.join(os.homedir(), "Library/LaunchAgents/com.clue-lens.overnight.plist");
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>Label</key><string>com.clue-lens.overnight</string><key>ProgramArguments</key><array><string>${script}</string><string>${specPath}</string><string>run</string></array><key>WorkingDirectory</key><string>${project}</string><key>RunAtLoad</key><true/><key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict><key>StartInterval</key><integer>300</integer><key>ThrottleInterval</key><integer>30</integer><key>StandardOutPath</key><string>${path.join(logDir, "launchd.out.log")}</string><key>StandardErrorPath</key><string>${path.join(logDir, "launchd.err.log")}</string></dict></plist>\n`, "utf8");
+    fs.writeFileSync(target, `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>Label</key><string>com.clue-lens.overnight</string><key>ProgramArguments</key><array><string>${script}</string><string>${specPath}</string><string>run</string></array><key>WorkingDirectory</key><string>${project}</string><key>RunAtLoad</key><true/><key>KeepAlive</key><false/><key>StartInterval</key><integer>300</integer><key>ThrottleInterval</key><integer>30</integer><key>StandardOutPath</key><string>${path.join(logDir, "launchd.out.log")}</string><key>StandardErrorPath</key><string>${path.join(logDir, "launchd.err.log")}</string></dict></plist>\n`, "utf8");
     console.log(`已生成 launchd 配置: ${target}`);
     console.log(`加载命令: launchctl bootstrap gui/${process.getuid?.() || "$(id -u)"} ${target}`);
     return;
@@ -630,6 +666,7 @@ async function main() {
     return;
   }
   if (!["run", "resume"].includes(mode)) throw new Error(`未知模式: ${mode}`);
+  if (mode === "run" && fs.existsSync(stateFile) && loadState(stateFile).status === "blocked") return;
   verifyBootstrapApproval(specDir);
   const releaseLock = acquireLock(lockFile, { specPath, mode });
   let integrationDir;
@@ -680,7 +717,14 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
     console.error(`❌ [OVERNIGHT] ${error.message}`);
-    process.exitCode = 1;
+    try {
+      const specPath = process.env.SPEC_PATH;
+      const stateFile = specPath ? path.join(resolveSpecDir(specPath), "automation-state.json") : "";
+      const state = stateFile && fs.existsSync(stateFile) ? JSON.parse(fs.readFileSync(stateFile, "utf8")) : null;
+      process.exitCode = state?.status === "blocked" ? EXIT_BLOCKED : 1;
+    } catch {
+      process.exitCode = 1;
+    }
   });
 }
 
